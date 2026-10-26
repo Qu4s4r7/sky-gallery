@@ -1,0 +1,1089 @@
+
+/* =========================================================
+   1. Variables y tema
+   ========================================================= */
+
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+
+  --bg: #fff;
+  --fg: #1a1a1a;
+  --muted: #777;
+  --card: #f4f4f5;
+  --line: #ddd;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --on-accent: #fff;
+  --danger: #dc2626;
+  --radius: 10px;
+
+  /* Material 3: carga de fotografías */
+  --sg-primary: var(--accent);
+  --sg-on-primary: var(--on-accent);
+  --sg-container: var(--card);
+  --sg-container-high: color-mix(in srgb, var(--card) 88%, var(--fg) 12%);
+  --sg-outline: var(--muted);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111;
+    --fg: #eee;
+    --muted: #999;
+    --card: #1c1c1e;
+    --line: #333;
+    --accent: #a5b4fc;
+    --accent-hover: #c7d2fe;
+    --on-accent: #111;
+
+    --sg-primary: var(--accent);
+    --sg-on-primary: var(--on-accent);
+    --sg-container: var(--card);
+    --sg-container-high: color-mix(in srgb, var(--card) 85%, white 15%);
+    --sg-outline: #777;
+  }
+}
+
+/* =========================================================
+   2. Reinicio y estilos globales
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--fg);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+}
+
+button {
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+img {
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: anywhere;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.center {
+  display: flex;
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+}
+
+/* =========================================================
+   3. Estructura de la aplicación
+   ========================================================= */
+
+.app {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-areas:
+    "top top"
+    "side main";
+  height: 100dvh;
+  min-height: 0;
+}
+
+.topbar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0 1rem 0 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 226px;
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.upload-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.upload-slot > button {
+  padding: 0.5rem 1.2rem;
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.upload-slot > button:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--accent-hover);
+}
+
+.avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.icon-btn {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border-color: transparent;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.icon-btn:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.sidebar {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  padding: 0.75rem 0.75rem 1rem 0;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1rem 0.7rem 1.4rem;
+  border-radius: 0 999px 999px 0;
+  color: var(--fg);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
+.nav-item.active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.storage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding: 1rem 0 0 1.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.storage-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.storage-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.content {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Enlaces con aspecto de botón */
+a.btn {
+  display: inline-block;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+  text-decoration: none;
+  transition: border-color 150ms ease;
+}
+
+a.btn:hover {
+  border-color: var(--accent);
+}
+
+/* =========================================================
+   4. Tarjetas y formularios
+   ========================================================= */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(360px, 92vw);
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.card.wide {
+  width: min(1000px, 94vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.card form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Páginas con contenido centrado */
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Diálogo de confirmación */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.choice input {
+  margin-top: 0.25rem;
+  accent-color: var(--accent);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+button.danger {
+  border-color: transparent;
+  background: var(--danger);
+  color: #fff;
+}
+
+button.danger:hover:not(:disabled) {
+  border-color: transparent;
+  filter: brightness(0.92);
+}
+
+td.actions {
+  text-align: right;
+}
+
+/* =========================================================
+   5. Tablas
+   ========================================================= */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td,
+th {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+/* =========================================================
+   6. Línea de tiempo de fotografías
+   ========================================================= */
+
+.grid-scroll {
+  height: 100%;
+  overflow: auto;
+}
+
+.timeline {
+  position: relative;
+}
+
+.day-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.photo-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.tile {
+  flex: none;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: var(--card);
+  cursor: pointer;
+}
+
+.tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 150ms ease;
+}
+
+.tile:hover img {
+  filter: brightness(0.9);
+}
+
+/* =========================================================
+   7. Visor de fotografías y notificaciones
+   ========================================================= */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 92%);
+}
+
+.overlay > img {
+  max-width: 100%;
+  max-height: calc(100% - 64px);
+  object-fit: contain;
+}
+
+.viewer-bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  color: #eee;
+  background: rgb(0 0 0 / 60%);
+}
+
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  max-width: min(380px, calc(100vw - 2rem));
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* =========================================================
+   8. Álbumes: contenedor y barra de acciones
+   ========================================================= */
+
+.albums {
+  padding: 20px;
+}
+
+.album-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.album-toolbar h2,
+.album-heading h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.album-heading {
+  min-width: 0;
+}
+
+.album-heading p {
+  margin: 5px 0 0;
+}
+
+.album-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(520px, 100%);
+  margin-bottom: 24px;
+}
+
+.album-form h3 {
+  margin: 0;
+}
+
+.album-form input,
+.album-form textarea {
+  width: 100%;
+}
+
+/* =========================================================
+   9. Álbumes: listado de tarjetas
+   ========================================================= */
+
+.album-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.album-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  min-height: 145px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--fg);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+a.album-card {
+  text-decoration: none;
+}
+
+.album-card:hover {
+  border-color: var(--accent);
+}
+
+.album-card strong {
+  font-size: 1rem;
+}
+
+.album-card-icon {
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.album-description {
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   10. Álbumes: cuadrícula de fotografías
+   ========================================================= */
+
+.album-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.album-photo {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.album-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: zoom-in;
+  transition: transform 180ms ease;
+}
+
+.album-photo img:hover {
+  transform: scale(1.03);
+}
+
+.album-photo-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 75%);
+  color: white;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.album-photo-remove:hover:not(:disabled) {
+  background: var(--danger);
+  border-color: transparent;
+}
+
+/* =========================================================
+   11. Álbumes: selector de fotografías
+   ========================================================= */
+
+.album-picker {
+  width: min(1000px, 94vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.album-picker h2 {
+  margin: 0;
+}
+
+.album-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.album-picker-item {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.album-picker-item.selected {
+  border-color: var(--accent);
+}
+
+.album-picker-item:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.album-picker-item img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.album-picker-item input {
+  align-self: flex-start;
+  min-width: auto;
+  accent-color: var(--accent);
+}
+
+.album-picker-item span {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.album-picker-actions {
+  position: sticky;
+  bottom: -1px;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0 2px;
+  background: var(--card);
+}
+
+/* =========================================================
+   12. Carga de fotografías y carpetas
+   ========================================================= */
+
+.sg-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Los inputs reales se activan desde botones visibles */
+.sg-hidden-input {
+  display: none !important;
+}
+
+.sg-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sg-upload-actions .sg-upload-button,
+.sg-upload-actions .sg-folder-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.sg-upload-actions .sg-upload-button {
+  background: var(--sg-primary);
+  color: var(--sg-on-primary);
+}
+
+.sg-upload-actions .sg-upload-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: transparent;
+}
+
+.sg-upload-actions .sg-folder-upload-button {
+  border: 1px solid var(--line);
+  background: var(--sg-container);
+  color: var(--fg);
+}
+
+.sg-upload-actions .sg-folder-upload-button:hover:not(:disabled) {
+  background: var(--sg-container-high);
+  border-color: var(--sg-outline);
+}
+
+.sg-upload-actions button:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.sg-upload-status {
+  color: var(--muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.sg-upload-spinner {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sg-upload-spin 700ms linear infinite;
+}
+
+.sg-upload-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 45vh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
+}
+
+.sg-upload-errors strong {
+  color: var(--danger);
+}
+
+.sg-upload-errors small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+@keyframes sg-upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   13. Diseño adaptable: móviles y pantallas pequeñas
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .page {
+    padding: 12px;
+  }
+
+  .albums {
+    padding: 12px;
+  }
+
+  .album-toolbar {
+    gap: 8px;
+  }
+
+  .album-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .album-card {
+    min-height: 130px;
+    padding: 12px;
+  }
+
+  .album-photo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .album-picker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .album-picker-item {
+    padding: 4px;
+  }
+}
+
+/* Barra lateral → barra de pestañas inferior */
+@media (max-width: 800px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 56px minmax(0, 1fr) 64px;
+    grid-template-areas:
+      "top"
+      "main"
+      "side";
+  }
+
+  .topbar {
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+  }
+
+  .brand {
+    width: auto;
+    font-size: 1rem;
+  }
+
+  .upload-slot .muted {
+    display: none;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+    overflow: visible;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+  }
+
+  .nav-item {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.15rem;
+    padding: 0.4rem 0;
+    border-radius: 0;
+    font-size: 0.7rem;
+  }
+
+  .nav-item.active {
+    background: transparent;
+  }
+
+  .storage {
+    display: none;
+  }
+
+  .sg-upload {
+    justify-content: flex-end;
+  }
+
+  .sg-upload-actions {
+    gap: 5px;
+  }
+
+  .sg-upload-actions .sg-upload-button,
+  .sg-upload-actions .sg-folder-upload-button {
+    min-height: 40px;
+    gap: 5px;
+    padding: 0 11px;
+    font-size: 0.78rem;
+  }
+
+  .sg-upload-status {
+    width: 100%;
+    text-align: right;
+  }
+}
+
+@media (max-width: 390px) {
+  .sg-upload-actions .sg-upload-button,
+  .sg-upload-actions .sg-folder-upload-button {
+    padding-inline: 8px;
+    font-size: 0.73rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .album-list {
+    grid-template-columns: 1fr;
+  }
+
+  .album-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .brand {
+    font-size: 0.92rem;
+  }
+}
+
+/* =========================================================
+   14. Accesibilidad: reducir animaciones
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .sg-upload-spinner {
+    animation: none;
+  }
+}
+
+.sg-upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--sg-on-surface-variant, #777);
+}
+
+.sg-upload-progress-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--sg-container-high, #e5e5e5);
+}
+
+.sg-upload-progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sg-primary, #6366f1);
+  transition: width 180ms ease;
+}
+
+.library {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.sg-trash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+}
+
+.sg-trash-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sg-trash-info span {
+  color: var(--sg-on-surface-variant, #777);
+  font-size: 0.85rem;
+}
+
+.sg-empty-trash-button {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #b3261e;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sg-empty-trash-button:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.sg-empty-trash-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sg-trash-notice {
+  margin: 0 24px 12px;
+  color: var(--sg-on-surface-variant, #777);
+  font-size: 0.9rem;
+}
+
+.library-message {
+  padding: 24px;
+}
+
+@media (max-width: 600px) {
+  .sg-trash-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px 16px;
+  }
+
+  .sg-empty-trash-button {
+    width: 100%;
+  }
+
+  .sg-trash-notice {
+    margin-inline: 16px;
+  }
+}

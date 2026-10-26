@@ -1,0 +1,19 @@
+[server]
+port = 3000
+host = "127.0.0.1"          # en el servidor: "0.0.0.0"
+
+[database]
+# socket local, sin contraseña (usa tu usuario del sistema)
+url = "postgres:///sky-gallery?host=/run/postgresql"
+# alternativa por red: "postgres://galeria:CLAVE@localhost:5432/galeria"
+
+[storage]
+# FUERA del repositorio y de la carpeta de la app
+originals_dir = "~/Documents/sky-gallery/originals"   # fotos originales: lo importante
+cache_dir     = "~/Documents/sky-gallery/cache"        # miniaturas y temporales: se pueden borrar
+default_quota_gb = 50
+max_upload_mb = 200
+allowed_types = ["jpg", "jpeg", "png", "webp", "gif"]
+
+[trash]
+retention_days = 30                  # se usará en la Fase 2 (purga)
