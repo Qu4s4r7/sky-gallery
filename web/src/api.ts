@@ -1,4 +1,3 @@
-
 export type Me = {
   id: number
   username: string
@@ -13,6 +12,8 @@ export type Photo = {
   height: number | null
   taken_at: number
   size_bytes: number
+  media_type: 'image' | 'video'
+  duration: number | null
 }
 
 export type UserRow = {
@@ -64,7 +65,6 @@ async function request<T>(
   return r.json()
 }
 
-// El Content-Type JSON solo se envía cuando hay cuerpo.
 const withJson = (method: string, data: unknown): RequestInit => ({
   method,
   headers: { 'Content-Type': 'application/json' },
@@ -88,7 +88,7 @@ export const api = {
   usage: () =>
     request<{ used_bytes: number; quota_bytes: number }>('/api/usage'),
 
-  // Fotos
+  // Fotos y vídeos
   photos: (offset: number, limit: number, trash: boolean) =>
     request<Photo[]>(
       `/api/photos?offset=${offset}&limit=${limit}${trash ? '&trash=1' : ''}`,
@@ -133,10 +133,16 @@ export const api = {
     request('/api/admin/users', withJson('POST', u)),
 
   deleteUser: (id: number, photos?: 'transfer' | 'detach') =>
-    request<{ ok: boolean; transferred: number; duplicates: number; archived: string | null }>(
+    request<{
+      ok: boolean
+      transferred: number
+      duplicates: number
+      archived: string | null
+    }>(
       `/api/admin/users/${id}${photos ? `?photos=${photos}` : ''}`,
       { method: 'DELETE' },
     ),
+
   // Álbumes
   albums: () =>
     request<Album[]>('/api/albums'),

@@ -9,11 +9,12 @@ const ACCEPTED_TYPES = new Set([
   'image/png',
   'image/webp',
   'image/gif',
+  'video/mp4',
 ])
 
-const ACCEPTED_EXTENSIONS = /\.(jpe?g|png|webp|gif)$/i
+const ACCEPTED_EXTENSIONS = /\.(jpe?g|png|webp|gif|mp4)$/i
 
-function isSupportedImage(file: File): boolean {
+function isSupportedFile(file: File): boolean {
   return (
     ACCEPTED_TYPES.has(file.type.toLowerCase()) ||
     ACCEPTED_EXTENSIONS.test(file.name)
@@ -37,7 +38,7 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
     setErrors([])
     setStatus('Preparando archivos…')
 
-    const files = selectedFiles.filter(isSupportedImage)
+    const files = selectedFiles.filter(isSupportedFile)
     const skipped = selectedFiles.length - files.length
     const bad: string[] = []
 
@@ -46,12 +47,12 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
 
     if (skipped > 0) {
       bad.push(
-        `${skipped} archivo${skipped === 1 ? '' : 's'} omitido${skipped === 1 ? '' : 's'} por no ser una imagen compatible.`,
+        `${skipped} archivo(s) omitido(s): formato no compatible.`,
       )
     }
 
     if (files.length === 0) {
-      setStatus('No se encontraron imágenes compatibles.')
+      setStatus('No se encontraron archivos compatibles.')
       setErrors(bad)
       setBusy(false)
       return
@@ -62,8 +63,6 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
         const batch = files.slice(i, i + BATCH)
 
         setStatus(`Subiendo ${processed + batch.length} de ${files.length}…`)
-        processed += batch.length
-        setProgress(Math.round((processed / files.length) * 100))
 
         try {
           const results = await api.upload(batch)
@@ -75,22 +74,17 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
               ok++
             }
           }
-
-          processed += batch.length
         } catch (error) {
-          bad.push(
-            `Error al subir el lote: ${(error as Error).message}`,
-          )
-
-          // Continuar con los siguientes lotes para no perder
-          // las oportunidades de subir los archivos restantes.
-          processed += batch.length
+          bad.push(`Error al subir el lote: ${(error as Error).message}`)
         }
+
+        processed += batch.length
+        setProgress(Math.round((processed / files.length) * 100))
       }
     } finally {
       setStatus(
-        `${ok} imagen${ok === 1 ? '' : 'es'} subida${ok === 1 ? '' : 's'}` +
-          (bad.length > 0 ? ` · ${bad.length} incidencia${bad.length === 1 ? '' : 's'}` : ''),
+        `${ok} archivo(s) subido(s)` +
+          (bad.length > 0 ? ` · ${bad.length} incidencia(s)` : ''),
       )
       setErrors(bad)
       setBusy(false)
@@ -101,14 +95,13 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.currentTarget.files ?? [])
-
-    // Permite volver a seleccionar la misma carpeta o archivo.
     event.currentTarget.value = ''
 
-    if (files.length > 0) {
-      void send(files)
-    }
+    if (files.length > 0) void send(files)
   }
+
+  const accept =
+    'image/jpeg,image/png,image/webp,image/gif,video/mp4,.jpg,.jpeg,.png,.webp,.gif,.mp4'
 
   return (
     <div className="sg-upload">
@@ -117,7 +110,7 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
         className="sg-hidden-input"
         type="file"
         multiple
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept={accept}
         onChange={handleChange}
         disabled={busy}
         tabIndex={-1}
@@ -127,16 +120,13 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
       <input
         ref={(node) => {
           folderInput.current = node
-
-          // React/TypeScript no siempre tipa webkitdirectory,
-          // así que lo configuramos mediante el atributo HTML.
           node?.setAttribute('webkitdirectory', '')
           node?.setAttribute('directory', '')
         }}
         className="sg-hidden-input"
         type="file"
         multiple
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept={accept}
         onChange={handleChange}
         disabled={busy}
         tabIndex={-1}
@@ -150,18 +140,7 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
           onClick={() => filesInput.current?.click()}
           disabled={busy}
         >
-          {busy && (
-            <div className="sg-upload-progress" role="status"
-              aria-label={`Progreso de subida: ${progress}%`}>
-              <div className="sg-upload-progress-track">
-                <div
-                  className="sg-upload-progress-value"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <span>{progress}%</span>
-            </div>
-          )}
+          {busy ? `Subiendo ${progress}%` : 'Subir fotos y vídeos'}
         </button>
 
         <button
@@ -169,12 +148,27 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
           className="sg-folder-upload-button"
           onClick={() => folderInput.current?.click()}
           disabled={busy}
-          title="Seleccionar una carpeta de fotografías"
+          title="Seleccionar una carpeta de fotos y vídeos"
         >
           <span aria-hidden="true">▰</span>
           <span>Subir carpeta</span>
         </button>
       </div>
+
+      {busy && (
+        <div
+          className="sg-upload-progress-track"
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="sg-upload-progress-value"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
 
       {!busy && status && (
         <span className="sg-upload-status" role="status">
@@ -190,17 +184,14 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
           title="Haz clic para cerrar"
         >
           <strong>
-            {errors.length} incidencia{errors.length === 1 ? '' : 's'} en la carga
+            {errors.length} incidencia(s) en la carga
           </strong>
 
           {errors.slice(0, 8).map((message, index) => (
             <div key={`${index}-${message}`}>{message}</div>
           ))}
 
-          {errors.length > 8 && (
-            <div>… y {errors.length - 8} más</div>
-          )}
-
+          {errors.length > 8 && <div>… y {errors.length - 8} más</div>}
           <small>Clic para cerrar</small>
         </div>
       )}

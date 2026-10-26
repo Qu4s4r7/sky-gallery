@@ -73,12 +73,20 @@ CREATE TABLE IF NOT EXISTS photos (
   size_bytes BIGINT NOT NULL,
   width INTEGER,
   height INTEGER,
+  media_type TEXT NOT NULL DEFAULT 'image',
+  duration DOUBLE PRECISION,
   taken_at BIGINT NOT NULL,
   exif JSONB,
   deleted_at BIGINT,
   created_at BIGINT NOT NULL,
   UNIQUE (user_id, sha256)
 );
+
+ALTER TABLE photos
+  ADD COLUMN IF NOT EXISTS media_type TEXT NOT NULL DEFAULT 'image';
+
+ALTER TABLE photos
+  ADD COLUMN IF NOT EXISTS duration DOUBLE PRECISION;
 
 CREATE INDEX IF NOT EXISTS idx_photos_user_taken ON photos (user_id, taken_at DESC);
 

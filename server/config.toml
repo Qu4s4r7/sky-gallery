@@ -13,7 +13,7 @@ originals_dir = "~/Documents/sky-gallery/originals"   # fotos originales: lo imp
 cache_dir     = "~/Documents/sky-gallery/cache"        # miniaturas y temporales: se pueden borrar
 default_quota_gb = 50
 max_upload_mb = 200
-allowed_types = ["jpg", "jpeg", "png", "webp", "gif"]
+allowed_types = ["jpg", "jpeg", "png", "webp", "gif", "mp4"]
 
 [trash]
 retention_days = 30                  # se usará en la Fase 2 (purga)

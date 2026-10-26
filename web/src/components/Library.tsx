@@ -14,52 +14,92 @@ export default function Library({ trash }: { trash: boolean }) {
   const [error, setError] = useState('')
   const [emptying, setEmptying] = useState(false)
   const [notice, setNotice] = useState('')
+
   const count = useRef(0)
   const busy = useRef(false)
+  const requestVersion = useRef(0)
 
   const viewer = useViewerParam()
-  const index = viewer.id ? photos.findIndex((p) => p.id === viewer.id) : -1
+  const index = viewer.id
+    ? photos.findIndex((p) => p.id === viewer.id)
+    : -1
 
   const more = useCallback(async () => {
     if (busy.current || done || emptying) return
 
     busy.current = true
+    const version = requestVersion.current
+
     try {
       const page = await api.photos(count.current, PAGE, trash)
+
+      // Ignora respuestas de una biblioteca anterior.
+      if (version !== requestVersion.current) return
+
       count.current += page.length
-      setPhotos((p) => [...p, ...page])
+      setPhotos((current) => [...current, ...page])
+
       if (page.length < PAGE) setDone(true)
     } catch (e) {
-      setError((e as Error).message)
+      if (version !== requestVersion.current) return
+
+      setError((e as Error).message || 'No se pudieron cargar los archivos')
       setDone(true)
     } finally {
-      busy.current = false
+      if (version === requestVersion.current) {
+        busy.current = false
+      }
     }
   }, [done, trash, emptying])
 
+  // Reinicia y carga la lista al cambiar entre biblioteca y papelera.
   useEffect(() => {
-    if (index >= 0 && index >= photos.length - 5) void more()
-  }, [index, photos.length, more])
+    requestVersion.current += 1
+    count.current = 0
+    busy.current = false
+
+    setPhotos([])
+    setDone(false)
+    setError('')
+    setNotice('')
+
+    return () => {
+      requestVersion.current += 1
+    }
+  }, [trash])
+
+  // Carga inicial. Espera a que el estado de reinicio se aplique.
+  useEffect(() => {
+    if (photos.length === 0 && !done && !error) {
+      void more()
+    }
+  }, [photos.length, done, error, more])
 
   async function act(id: number) {
-    await (trash ? api.restore(id) : api.remove(id))
+    try {
+      await (trash ? api.restore(id) : api.remove(id))
 
-    const i = photos.findIndex((p) => p.id === id)
-    const neighbour = i === -1 ? undefined : (photos[i + 1] ?? photos[i - 1])
-    const next = photos.filter((p) => p.id !== id)
+      const i = photos.findIndex((p) => p.id === id)
+      const neighbour =
+        i === -1 ? undefined : photos[i + 1] ?? photos[i - 1]
 
-    count.current = next.length
-    setPhotos(next)
+      const next = photos.filter((p) => p.id !== id)
 
-    if (neighbour) viewer.show(neighbour.id)
-    else viewer.close()
+      count.current = next.length
+      setPhotos(next)
+
+      if (neighbour) viewer.show(neighbour.id)
+      else viewer.close()
+    } catch (e) {
+      setError((e as Error).message || 'No se pudo modificar el archivo')
+    }
   }
 
   async function emptyTrash() {
     if (!trash || emptying || photos.length === 0) return
 
     const confirmed = window.confirm(
-      `¿Vaciar la papelera? Esta acción eliminará permanentemente las ${photos.length} fotografías cargadas en esta vista y no se podrán recuperar.`
+      '¿Vaciar la papelera? Esta acción eliminará permanentemente los archivos que estén en la papelera y no se podrán recuperar.',
     )
 
     if (!confirmed) return
@@ -69,8 +109,6 @@ export default function Library({ trash }: { trash: boolean }) {
     setNotice('Vaciando papelera…')
 
     try {
-      // La API elimina todas las fotos en papelera del usuario,
-      // no solamente las que están cargadas en la vista.
       const result = await api.emptyTrash()
 
       setPhotos([])
@@ -80,13 +118,13 @@ export default function Library({ trash }: { trash: boolean }) {
 
       if (result.cleanupFailures > 0) {
         setNotice(
-          `Se eliminaron ${result.deleted} registros, pero no se pudieron borrar ${result.cleanupFailures} archivos físicos. Revisa los registros del servidor.`
+          `Se eliminaron ${result.deleted} registros, pero no se pudieron borrar ${result.cleanupFailures} archivos físicos. Revisa los registros del servidor.`,
         )
       } else {
         setNotice(
           result.deleted === 0
             ? 'La papelera ya estaba vacía.'
-            : `Papelera vaciada. Se eliminaron ${result.deleted} fotografías permanentemente.`
+            : `Papelera vaciada. Se eliminaron ${result.deleted} archivos permanentemente.`,
         )
       }
     } catch (e) {
@@ -101,6 +139,21 @@ export default function Library({ trash }: { trash: boolean }) {
     return (
       <div className="library-message">
         <p className="center error">{error}</p>
+
+        <button
+          type="button"
+          onClick={() => {
+            requestVersion.current += 1
+            count.current = 0
+            busy.current = false
+            setPhotos([])
+            setError('')
+            setDone(false)
+          }}
+        >
+          Reintentar
+        </button>
+
         {trash && (
           <button
             type="button"
@@ -108,7 +161,7 @@ export default function Library({ trash }: { trash: boolean }) {
             onClick={() => void emptyTrash()}
             disabled={emptying}
           >
-            {emptying ? 'Vaciando…' : 'Reintentar vaciar papelera'}
+            {emptying ? 'Vaciando…' : 'Vaciar papelera'}
           </button>
         )}
       </div>
@@ -122,7 +175,8 @@ export default function Library({ trash }: { trash: boolean }) {
           <div className="sg-trash-info">
             <strong>Papelera</strong>
             <span>
-              Las fotografías eliminadas se borran definitivamente al vaciarla.
+              Las fotos y los vídeos eliminados se borran definitivamente al
+              vaciarla.
             </span>
           </div>
 
@@ -147,8 +201,10 @@ export default function Library({ trash }: { trash: boolean }) {
         <p className="center muted">
           {trash
             ? 'La papelera está vacía'
-            : 'Aún no hay fotos. Usa “Subir fotos”.'}
+            : 'Aún no hay fotos ni vídeos. Usa “Subir fotos y vídeos”.'}
         </p>
+      ) : photos.length === 0 ? (
+        <p className="center muted">Cargando archivos…</p>
       ) : (
         <Timeline
           photos={photos}
@@ -161,7 +217,11 @@ export default function Library({ trash }: { trash: boolean }) {
         <Viewer
           id={viewer.id}
           photo={index >= 0 ? photos[index] : undefined}
-          onPrev={index > 0 ? () => viewer.show(photos[index - 1].id) : undefined}
+          onPrev={
+            index > 0
+              ? () => viewer.show(photos[index - 1].id)
+              : undefined
+          }
           onNext={
             index >= 0 && index < photos.length - 1
               ? () => viewer.show(photos[index + 1].id)
@@ -178,10 +238,13 @@ export default function Library({ trash }: { trash: boolean }) {
   )
 }
 
-// ---------- línea de tiempo justificada, agrupada por día ----------
-
 type Item =
-  | { kind: 'header'; key: string; size: number; label: string }
+  | {
+      kind: 'header'
+      key: string
+      size: number
+      label: string
+    }
   | {
       kind: 'row'
       key: string
@@ -191,7 +254,9 @@ type Item =
     }
 
 const ratio = (p: Photo) =>
-  p.width && p.height ? Math.min(Math.max(p.width / p.height, 0.5), 3) : 1.5
+  p.width && p.height
+    ? Math.min(Math.max(p.width / p.height, 0.5), 3)
+    : 1.5
 
 const dayKey = (t: number) => {
   const d = new Date(t)
@@ -210,8 +275,13 @@ const dayLabel = (t: number) => {
   })
 }
 
-function buildItems(photos: Photo[], width: number, target: number): Item[] {
+function buildItems(
+  photos: Photo[],
+  width: number,
+  target: number,
+): Item[] {
   const items: Item[] = []
+
   if (width <= 0) return items
 
   let i = 0
@@ -220,7 +290,9 @@ function buildItems(photos: Photo[], width: number, target: number): Item[] {
     const key = dayKey(photos[i].taken_at)
     let j = i
 
-    while (j < photos.length && dayKey(photos[j].taken_at) === key) j++
+    while (j < photos.length && dayKey(photos[j].taken_at) === key) {
+      j++
+    }
 
     const group = photos.slice(i, j)
     i = j
@@ -246,16 +318,19 @@ function buildItems(photos: Photo[], width: number, target: number): Item[] {
         key: `r-${row[0].id}`,
         size: height + GAP,
         height,
-        tiles: row.map((p) => ({ photo: p, w: ratio(p) * height })),
+        tiles: row.map((photo) => ({
+          photo,
+          w: ratio(photo) * height,
+        })),
       })
 
       row = []
       sum = 0
     }
 
-    for (const p of group) {
-      row.push(p)
-      sum += ratio(p)
+    for (const photo of group) {
+      row.push(photo)
+      sum += ratio(photo)
 
       if ((width - GAP * (row.length - 1)) / sum <= target) {
         flush(false)
@@ -285,6 +360,7 @@ function Timeline({
     if (!el) return
 
     const ro = new ResizeObserver(() => setBox(el.clientWidth))
+
     ro.observe(el)
     setBox(el.clientWidth)
 
@@ -315,27 +391,39 @@ function Timeline({
   const last = visible.length ? visible[visible.length - 1].index : -1
 
   useEffect(() => {
-    if (last >= items.length - 3) onNearEnd()
+    if (items.length > 0 && last >= items.length - 3) {
+      onNearEnd()
+    }
   }, [last, items.length, onNearEnd])
 
   return (
     <div ref={scrollRef} className="grid-scroll">
-      <div className="timeline" style={{ height: virt.getTotalSize() + 24 }}>
+      <div
+        className="timeline"
+        style={{ height: virt.getTotalSize() + 24, position: 'relative' }}
+      >
         {visible.map((v) => {
-          const it = items[v.index]
+          const item = items[v.index]
+
           const place = {
+            position: 'absolute' as const,
+            top: 0,
+            left: 0,
+            width: '100%',
             transform: `translateY(${v.start}px)`,
             paddingLeft: pad,
+            paddingRight: pad,
+            boxSizing: 'border-box' as const,
           }
 
-          if (it.kind === 'header') {
+          if (item.kind === 'header') {
             return (
               <h2
                 key={v.key}
                 className="day-header"
-                style={{ ...place, height: it.size }}
+                style={{ ...place, height: item.size, margin: 0 }}
               >
-                {it.label}
+                {item.label}
               </h2>
             )
           }
@@ -344,19 +432,49 @@ function Timeline({
             <div
               key={v.key}
               className="photo-row"
-              style={{ ...place, height: it.height }}
+              style={{ ...place, height: item.height, display: 'flex', gap: GAP }}
             >
-              {it.tiles.map(({ photo, w }) => (
-                <button
-                  key={photo.id}
-                  className="tile"
-                  style={{ width: w, height: it.height }}
-                  onClick={() => onOpen(photo.id)}
-                  aria-label={photo.original_name}
-                >
-                  <img src={api.thumb(photo.id)} alt="" loading="lazy" />
-                </button>
-              ))}
+              {item.tiles.map(({ photo, w }) => {
+                const isVideo = photo.media_type === 'video'
+
+                return (
+                  <button
+                    key={photo.id}
+                    type="button"
+                    className={`tile${isVideo ? ' tile-video' : ''}`}
+                    style={{
+                      width: w,
+                      height: item.height,
+                      flex: '0 0 auto',
+                    }}
+                    onClick={() => onOpen(photo.id)}
+                    aria-label={
+                      isVideo
+                        ? `Reproducir vídeo: ${photo.original_name}`
+                        : photo.original_name
+                    }
+                    title={photo.original_name}
+                  >
+                    {isVideo ? (
+                      <span className="tile-video-placeholder" aria-hidden="true">
+                        <span className="tile-video-play">▶</span>
+                      </span>
+                    ) : (
+                      <img
+                        src={api.thumb(photo.id)}
+                        alt=""
+                        loading="lazy"
+                      />
+                    )}
+
+                    {isVideo && (
+                      <span className="tile-video-label" aria-hidden="true">
+                        VIDEO
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           )
         })}
