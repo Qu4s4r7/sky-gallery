@@ -446,6 +446,8 @@ function Timeline({
                       width: w,
                       height: item.height,
                       flex: '0 0 auto',
+                      position: 'relative',
+                      overflow: 'hidden',
                     }}
                     onClick={() => onOpen(photo.id)}
                     aria-label={
@@ -455,22 +457,31 @@ function Timeline({
                     }
                     title={photo.original_name}
                   >
-                    {isVideo ? (
-                      <span className="tile-video-placeholder" aria-hidden="true">
-                        <span className="tile-video-play">▶</span>
-                      </span>
-                    ) : (
-                      <img
-                        src={api.thumb(photo.id)}
-                        alt=""
-                        loading="lazy"
-                      />
-                    )}
+                    <img
+                      src={api.thumb(photo.id)}
+                      alt=""
+                      loading="lazy"
+                    />
 
                     {isVideo && (
-                      <span className="tile-video-label" aria-hidden="true">
-                        VIDEO
-                      </span>
+                      <>
+                        <span
+                          className="tile-video-play"
+                          aria-hidden="true"
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          ▶
+                        </span>
+                        <span className="tile-video-label" aria-hidden="true">
+                          VIDEO
+                        </span>
+                      </>
                     )}
                   </button>
                 )

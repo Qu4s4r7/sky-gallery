@@ -203,13 +203,33 @@ export default function AlbumView() {
         ) : (
           <div className="album-photo-grid">
             {photos.map((photo) => (
-              <div className="album-photo" key={photo.id}>
+              <div
+                className="album-photo"
+                key={photo.id}
+                style={{ position: 'relative' }}
+              >
                 <img
                   src={api.thumb(photo.id)}
                   alt={photo.original_name}
                   loading="lazy"
                   onClick={() => viewer.open(photo.id)}
+                  style={{ cursor: 'pointer' }}
                 />
+                {photo.media_type === 'video' && (
+                  <span
+                    className="tile-video-play"
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    ▶
+                  </span>
+                )}
                 <button
                   className="album-photo-remove"
                   title="Quitar del álbum"
@@ -255,8 +275,24 @@ export default function AlbumView() {
                     <label
                       className={`album-picker-item${checked ? ' selected' : ''}`}
                       key={photo.id}
+                      style={{ position: 'relative' }}
                     >
                       <img src={api.thumb(photo.id)} alt={photo.original_name} loading="lazy" />
+                      {photo.media_type === 'video' && (
+                        <span
+                          className="tile-video-play"
+                          aria-hidden="true"
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: '28%',
+                            transform: 'translate(-50%, -50%)',
+                            pointerEvents: 'none',
+                          }}
+                        >
+                          ▶
+                        </span>
+                      )}
                       <input
                         type="checkbox"
                         checked={checked}
