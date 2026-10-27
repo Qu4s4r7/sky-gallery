@@ -5,12 +5,51 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import sharp from 'sharp'
 import exifr from 'exifr'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { config, dirs } from './config.js'
 import { db } from './db.js'
 import { requireUser } from './auth.js'
+
+const execFileAsync = promisify(execFile)
+
+async function makeVideoThumb(src: string, out: string): Promise<void> {
+  const tmpFrame = path.join(
+    dirs.tmp,
+    `${crypto.randomUUID()}.jpg`,
+  )
+
+  try {
+    await execFileAsync(
+      'ffmpeg',
+      [
+        '-hide_banner',
+        '-loglevel', 'error',
+        '-nostdin',
+        '-y',
+        '-ss', '1',
+        '-i', src,
+        '-frames:v', '1',
+        '-q:v', '3',
+        tmpFrame,
+      ],
+      { timeout: 60_000 },
+    )
+
+    await sharp(tmpFrame)
+      .resize(640, 640, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 78 })
+      .toFile(out)
+  } finally {
+    await fsp.rm(tmpFrame, { force: true })
+  }
+}
 
 const MIME: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -242,8 +281,12 @@ export function photoRoutes(app: FastifyInstance) {
         const id = Number(rows[0].id)
 
         // Las miniaturas WebP se generan únicamente para imágenes.
-        if (mediaType === 'image') {
-          await makeThumb(dest, path.join(dirs.thumbs, `${id}.webp`))
+        const thumbPath = path.join(dirs.thumbs, `${id}.webp`)
+
+        if (mediaType === 'video') {
+          await makeVideoThumb(dest, thumbPath)
+        } else {
+          await makeThumb(dest, thumbPath)
         }
 
         results.push({ name, id })
@@ -316,22 +359,26 @@ export function photoRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: 'no existe' })
     }
 
-    if (p.media_type === 'video') {
-      return reply.code(415).send({
-        error: 'las miniaturas de vídeo todavía no están disponibles',
-      })
-    }
-
     const src = path.join(config.originalsDir, p.rel_path)
     const thumb = path.join(dirs.thumbs, `${p.id}.webp`)
 
     try {
       await fsp.access(thumb).catch(async () => {
-        await makeThumb(src, thumb)
+        if (p.media_type === 'video') {
+          await makeVideoThumb(src, thumb)
+        } else {
+          await makeThumb(src, thumb)
+        }
       })
     } catch (e) {
-      req.log.error({ err: e, photoId: p.id }, 'No se pudo generar miniatura')
-      return reply.code(500).send({ error: 'no se pudo generar la miniatura' })
+      req.log.error(
+        { err: e, photoId: p.id },
+        'No se pudo generar miniatura',
+      )
+
+      return reply.code(500).send({
+        error: 'no se pudo generar la miniatura',
+      })
     }
 
     return reply
