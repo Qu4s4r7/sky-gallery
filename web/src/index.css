@@ -1,4 +1,3 @@
-
 /* =========================================================
    1. Variables y tema
    ========================================================= */
@@ -15,6 +14,9 @@
   --accent: #6366f1;
   --accent-hover: #4f46e5;
   --on-accent: #fff;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --signal: #2563eb;
+  --ruler: color-mix(in srgb, var(--fg) 35%, transparent);
   --danger: #dc2626;
   --radius: 10px;
 
@@ -24,6 +26,7 @@
   --sg-container: var(--card);
   --sg-container-high: color-mix(in srgb, var(--card) 88%, var(--fg) 12%);
   --sg-outline: var(--muted);
+  --sg-on-surface-variant: var(--muted);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -42,6 +45,7 @@
     --sg-container: var(--card);
     --sg-container-high: color-mix(in srgb, var(--card) 85%, white 15%);
     --sg-outline: #777;
+    --signal: #4c8dff;
   }
 }
 
@@ -404,9 +408,32 @@ th {
    6. Línea de tiempo de fotografías
    ========================================================= */
 
-.grid-scroll {
+/* Biblioteca: barra opcional (papelera) + línea de tiempo que ocupa el resto */
+.library {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   height: 100%;
+}
+
+.timeline-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* El scroll lo hace este contenedor; la barra nativa se oculta
+   porque la sustituye la regla del scrubber */
+.grid-scroll {
+  position: absolute;
+  inset: 0;
   overflow: auto;
+  scrollbar-width: none;
+}
+
+.grid-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .timeline {
@@ -437,6 +464,7 @@ th {
 }
 
 .tile {
+  position: relative;
   flex: none;
   padding: 0;
   overflow: hidden;
@@ -459,9 +487,167 @@ th {
 }
 
 /* =========================================================
+   6b. Scrubber de fechas (regla)
+   ========================================================= */
+
+.scrubber {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 56px;
+  font-family: var(--mono);
+  cursor: ns-resize;
+  touch-action: none;       /* en móvil el gesto arrastra el marcador, no la página */
+  user-select: none;
+}
+
+.scrubber.compact {
+  width: 40px;
+}
+
+/* línea vertical + marcas */
+.scrubber .ruler {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.scrubber.active .ruler {
+  opacity: 1;
+}
+
+.scrubber .ruler::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 6px;
+  bottom: 0;
+  width: 1px;
+  background: var(--ruler);
+}
+
+.scrubber .tick {
+  position: absolute;
+  right: 7px;
+  width: 6px;
+  height: 1px;
+  background: var(--ruler);
+}
+
+.scrubber .tick.major {
+  width: 14px;
+  background: color-mix(in srgb, var(--fg) 65%, transparent);
+}
+
+.scrubber .tick.major b {
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+.scrubber.compact .tick.major b {
+  display: none;
+}
+
+/* marcador azul */
+.scrubber .marker {
+  position: absolute;
+  right: 6px;
+  width: 24px;
+  height: 2px;
+  transform: translateY(-1px);
+  background: var(--signal);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--signal) 70%, transparent);
+  pointer-events: none;
+  transition: width 150ms ease;
+}
+
+.scrubber.active .marker {
+  width: 40px;
+}
+
+/* lectura: MES AÑO + porcentaje */
+.scrubber .readout {
+  position: absolute;
+  right: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  padding: 0.4rem 0.65rem;
+  transform: translateY(-50%);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(8px);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.scrubber .readout strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.scrubber .readout span {
+  color: var(--signal);
+}
+
+.scrubber.compact .readout {
+  right: 48px;
+}
+
+.scrubber.active .readout {
+  opacity: 1;
+}
+
+/* texto vertical tenue (opcional: se quita borrando su <div> en Scrubber.tsx) */
+.scrubber .scrubber-vertical {
+  position: absolute;
+  top: 0;
+  right: 64px;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--muted);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.scrubber.active .scrubber-vertical {
+  opacity: 0.35;
+}
+
+.scrubber.compact .scrubber-vertical {
+  right: 48px;
+  font-size: 1.1rem;
+}
+
+/* =========================================================
    7. Visor de fotografías y notificaciones
    ========================================================= */
 
+/* Capa que cubre la pantalla: visor, selector de álbumes y diálogos */
 .overlay {
   position: fixed;
   inset: 0;
@@ -825,6 +1011,31 @@ a.album-card {
   color: var(--muted);
 }
 
+.sg-upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--sg-on-surface-variant);
+}
+
+.sg-upload-progress-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--sg-container-high);
+}
+
+.sg-upload-progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sg-primary);
+  transition: width 180ms ease;
+}
+
 @keyframes sg-upload-spin {
   to {
     transform: rotate(360deg);
@@ -832,7 +1043,169 @@ a.album-card {
 }
 
 /* =========================================================
-   13. Diseño adaptable: móviles y pantallas pequeñas
+   13. Biblioteca y papelera
+   ========================================================= */
+
+.sg-trash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+}
+
+.sg-trash-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sg-trash-info span {
+  color: var(--sg-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.sg-empty-trash-button {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #b3261e;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sg-empty-trash-button:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.sg-empty-trash-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sg-trash-notice {
+  margin: 0 24px 12px;
+  color: var(--sg-on-surface-variant);
+  font-size: 0.9rem;
+}
+
+.library-message {
+  padding: 24px;
+}
+
+/* =========================================================
+   14. Soporte visual para vídeos
+   ========================================================= */
+
+/* Botón de reproducir centrado (la posición la fija Library.tsx en línea) */
+.tile-video-play {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  padding-left: 3px;       /* compensa el hueco visual del triángulo */
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 35%);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+/* Etiqueta VIDEO, en el mismo estilo de la regla */
+.tile-video-label {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 6px;
+  border: 1px solid rgb(255 255 255 / 30%);
+  background: rgb(0 0 0 / 65%);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+
+.sg-video-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 72%);
+  color: white;
+  pointer-events: none;
+}
+
+.sg-video-badge svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sg-video-duration {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: rgb(0 0 0 / 75%);
+  color: white;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.overlay > video {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100% - 64px);
+  object-fit: contain;
+  background: black;
+}
+
+.viewer-media {
+  max-width: 100%;
+  max-height: calc(100% - 64px);
+  object-fit: contain;
+}
+
+.viewer-video {
+  width: min(100%, 1200px);
+  height: auto;
+  aspect-ratio: auto;
+  background: #000;
+}
+
+.tile-video-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: #171717;
+  color: #fff;
+  font-size: 1.8rem;
+}
+
+.tile-video-placeholder span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 55%);
+}
+
+/* =========================================================
+   15. Diseño adaptable: móviles y pantallas pequeñas
    ========================================================= */
 
 @media (max-width: 700px) {
@@ -947,6 +1320,22 @@ a.album-card {
   }
 }
 
+@media (max-width: 600px) {
+  .sg-trash-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px 16px;
+  }
+
+  .sg-empty-trash-button {
+    width: 100%;
+  }
+
+  .sg-trash-notice {
+    margin-inline: 16px;
+  }
+}
+
 @media (max-width: 390px) {
   .sg-upload-actions .sg-upload-button,
   .sg-upload-actions .sg-folder-upload-button {
@@ -970,7 +1359,7 @@ a.album-card {
 }
 
 /* =========================================================
-   14. Accesibilidad: reducir animaciones
+   16. Accesibilidad: reducir animaciones
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
@@ -988,185 +1377,137 @@ a.album-card {
   }
 }
 
-.sg-upload-progress {
+.scrubber {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  width: 56px;
+  font-family: var(--mono);
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.scrubber.compact {
+  width: 40px;
+}
+
+.scrubber .ruler {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.scrubber.active .ruler {
+  opacity: 1;
+}
+
+.scrubber .ruler-tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.scrubber .ruler-line {
+  position: absolute;
+  right: 10px;
+  width: 8px;
+  height: 1px;
+  background: var(--text-secondary, currentColor);
+  opacity: 0.55;
+}
+
+.scrubber .ruler-year {
+  position: absolute;
+  right: 21px;
+  top: -7px;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--text-secondary, currentColor);
+  white-space: nowrap;
+}
+
+.scrubber .marker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent, #6366f1);
+  transform: translateY(-1px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scrubber .marker::before {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent, #6366f1);
+}
+
+.scrubber .readout {
+  position: absolute;
+  right: 64px;
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
-  margin-top: 10px;
-  font-size: 0.8rem;
-  color: var(--sg-on-surface-variant, #777);
+  padding: 9px 12px;
+  border: 1px solid var(--border, #333);
+  border-radius: 12px;
+  background: var(--surface, #1d1d1d);
+  color: var(--text, #fff);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 120ms ease;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.sg-upload-progress-track {
-  flex: 1;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--sg-container-high, #e5e5e5);
+.scrubber .readout span {
+  opacity: 0.6;
 }
 
-.sg-upload-progress-value {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--sg-primary, #6366f1);
-  transition: width 180ms ease;
+.scrubber.compact .readout {
+  right: 48px;
 }
 
-.library {
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+.scrubber.active .readout {
+  opacity: 1;
 }
 
-.sg-trash-toolbar {
+.scrubber .scrubber-vertical {
+  position: absolute;
+  top: 0;
+  right: 64px;
+  bottom: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 24px;
-}
-
-.sg-trash-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.sg-trash-info span {
-  color: var(--sg-on-surface-variant, #777);
-  font-size: 0.85rem;
-}
-
-.sg-empty-trash-button {
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 16px;
-  background: #b3261e;
-  color: white;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.sg-empty-trash-button:hover:not(:disabled) {
-  filter: brightness(0.92);
-}
-
-.sg-empty-trash-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.sg-trash-notice {
-  margin: 0 24px 12px;
-  color: var(--sg-on-surface-variant, #777);
-  font-size: 0.9rem;
-}
-
-.library-message {
-  padding: 24px;
-}
-
-@media (max-width: 600px) {
-  .sg-trash-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 12px 16px;
-  }
-
-  .sg-empty-trash-button {
-    width: 100%;
-  }
-
-  .sg-trash-notice {
-    margin-inline: 16px;
-  }
-}
-
-
-
-/* =========================================================
-   15. Soporte visual para videos
-   ========================================================= */
-
-.tile {
-  position: relative;
-}
-
-.sg-video-badge {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border: 1px solid rgb(255 255 255 / 25%);
-  border-radius: 50%;
-  background: rgb(0 0 0 / 72%);
-  color: white;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  opacity: 0;
   pointer-events: none;
 }
 
-.sg-video-badge svg {
-  width: 15px;
-  height: 15px;
+.scrubber.active .scrubber-vertical {
+  opacity: 0.35;
 }
 
-.overlay > video {
-  display: block;
-  max-width: 100%;
-  max-height: calc(100% - 64px);
-  object-fit: contain;
-  background: black;
-}
-
-.sg-video-duration {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  padding: 3px 6px;
-  border-radius: 5px;
-  background: rgb(0 0 0 / 75%);
-  color: white;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
-}
-
-.viewer-media {
-  max-width: 100%;
-  max-height: calc(100% - 64px);
-  object-fit: contain;
-}
-
-.viewer-video {
-  width: min(100%, 1200px);
-  height: auto;
-  aspect-ratio: auto;
-  background: #000;
-}
-
-.tile-video-placeholder {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  background: #171717;
-  color: #fff;
-  font-size: 1.8rem;
-}
-
-.tile-video-placeholder span {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgb(0 0 0 / 55%);
+.scrubber:focus-visible {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: -2px;
 }

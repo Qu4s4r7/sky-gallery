@@ -38,7 +38,7 @@ export default function Layout({ me, onLogout }: { me: Me; onLogout: () => void 
 
       <nav className="sidebar" aria-label="Principal">
         <NavLink to="/" end className={item}>
-          <Icon name="image" /><span>Fotos</span>
+          <Icon name="image" /><span>Libreria</span>
         </NavLink>
         <NavLink to="/albumes" className={item}>
           <Icon name="albums" /><span>Álbumes</span>

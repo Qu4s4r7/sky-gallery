@@ -335,6 +335,19 @@ export function photoRoutes(app: FastifyInstance) {
     )
   })
 
+  // ---------- RESUMEN POR MES (para el scrubber de fechas) ----------
+  app.get('/api/timeline', auth, async (req) => {
+    const { trash, tz } = req.query as any
+    const filter = trash ? 'deleted_at IS NOT NULL' : 'deleted_at IS NULL'
+    const offset = Math.trunc(Number(tz)) || 0   // minutos, igual que Date.getTimezoneOffset()
+    return db.all(
+      `SELECT to_char(to_timestamp(taken_at / 1000.0 - ?::int * 60) AT TIME ZONE 'UTC', 'YYYY-MM') AS ym,
+              count(*) AS n
+       FROM photos WHERE user_id = ? AND ${filter}
+       GROUP BY ym ORDER BY ym DESC`,
+      [offset, req.user!.id])
+  })
+
   // ---------- USO DE ALMACENAMIENTO ----------
 
   app.get('/api/usage', auth, async (req) => {

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { api, type Photo } from '../api'
 import { useViewerParam } from '../hooks/useViewerParam'
 import Viewer from './Viewer'
+import Scrubber, { type Bucket } from './Scrubber'
 
 const PAGE = 200
+const JUMP_PAGE = 500   // al saltar a una fecha lejana se carga en trozos grandes
 const GAP = 4
 const HEADER_H = 52
 
@@ -14,9 +16,11 @@ export default function Library({ trash }: { trash: boolean }) {
   const [error, setError] = useState('')
   const [emptying, setEmptying] = useState(false)
   const [notice, setNotice] = useState('')
+  const [timeline, setTimeline] = useState<{ buckets: Bucket[]; total: number } | null>(null)
 
   const count = useRef(0)
-  const busy = useRef(false)
+  const finished = useRef(false)                    // espejo de `done`, legible desde bucles async
+  const inflight = useRef<Promise<void> | null>(null)
   const requestVersion = useRef(0)
 
   const viewer = useViewerParam()
@@ -24,56 +28,107 @@ export default function Library({ trash }: { trash: boolean }) {
     ? photos.findIndex((p) => p.id === viewer.id)
     : -1
 
-  const more = useCallback(async () => {
-    if (busy.current || done || emptying) return
+  // Una sola petición a la vez; si ya hay una en curso, se espera a esa.
+  const loadPage = useCallback((limit = PAGE): Promise<void> => {
+    if (finished.current || emptying) return Promise.resolve()
+    if (inflight.current) return inflight.current
 
-    busy.current = true
     const version = requestVersion.current
 
-    try {
-      const page = await api.photos(count.current, PAGE, trash)
+    const p = (async () => {
+      try {
+        const page = await api.photos(count.current, limit, trash)
 
-      // Ignora respuestas de una biblioteca anterior.
-      if (version !== requestVersion.current) return
+        // Ignora respuestas de una biblioteca anterior.
+        if (version !== requestVersion.current) return
 
-      count.current += page.length
-      setPhotos((current) => [...current, ...page])
+        count.current += page.length
+        setPhotos((current) => [...current, ...page])
 
-      if (page.length < PAGE) setDone(true)
-    } catch (e) {
-      if (version !== requestVersion.current) return
+        if (page.length < limit) {
+          finished.current = true
+          setDone(true)
+        }
+      } catch (e) {
+        if (version !== requestVersion.current) return
 
-      setError((e as Error).message || 'No se pudieron cargar los archivos')
-      setDone(true)
-    } finally {
-      if (version === requestVersion.current) {
-        busy.current = false
+        setError((e as Error).message || 'No se pudieron cargar los archivos')
+        finished.current = true
+        setDone(true)
+      } finally {
+        if (version === requestVersion.current) {
+          inflight.current = null
+        }
       }
-    }
-  }, [done, trash, emptying])
+    })()
 
-  // Reinicia y carga la lista al cambiar entre biblioteca y papelera.
+    inflight.current = p
+    return p
+  }, [trash, emptying])
+
+  const more = useCallback(() => { void loadPage() }, [loadPage])
+
+  // Carga hasta cubrir la posición pedida; devuelve cuántos archivos hay cargados.
+  const loadTo = useCallback(async (idx: number) => {
+    while (!finished.current && count.current <= idx) {
+      const before = count.current
+      await loadPage(JUMP_PAGE)
+      if (count.current === before && !finished.current) break   // sin progreso: no se queda en bucle
+    }
+    return count.current
+  }, [loadPage])
+
+  // Resumen por mes para el scrubber; si falla, la galería funciona igual sin él.
+  const loadTimeline = useCallback(() => {
+    const version = requestVersion.current
+
+    api.timeline(trash)
+      .then((rows) => {
+        if (version !== requestVersion.current) return
+
+        let acc = 0
+        const buckets = rows.map((r) => {
+          const b = { ...r, start: acc }
+          acc += r.n
+          return b
+        })
+        setTimeline({ buckets, total: acc })
+      })
+      .catch(() => {})
+  }, [trash])
+
+  // Reinicia al cambiar entre biblioteca y papelera.
   useEffect(() => {
     requestVersion.current += 1
     count.current = 0
-    busy.current = false
+    finished.current = false
+    inflight.current = null
 
     setPhotos([])
     setDone(false)
     setError('')
     setNotice('')
+    setTimeline(null)
 
     return () => {
       requestVersion.current += 1
     }
   }, [trash])
 
+  // Debe ir después del reinicio: así toma la versión ya incrementada.
+  useEffect(() => { loadTimeline() }, [loadTimeline])
+
   // Carga inicial. Espera a que el estado de reinicio se aplique.
   useEffect(() => {
     if (photos.length === 0 && !done && !error) {
-      void more()
+      more()
     }
   }, [photos.length, done, error, more])
+
+  // Si el visor se acerca al final de lo cargado, pide la siguiente página.
+  useEffect(() => {
+    if (index >= 0 && index >= photos.length - 5) more()
+  }, [index, photos.length, more])
 
   async function act(id: number) {
     try {
@@ -87,6 +142,7 @@ export default function Library({ trash }: { trash: boolean }) {
 
       count.current = next.length
       setPhotos(next)
+      loadTimeline()
 
       if (neighbour) viewer.show(neighbour.id)
       else viewer.close()
@@ -113,7 +169,9 @@ export default function Library({ trash }: { trash: boolean }) {
 
       setPhotos([])
       count.current = 0
+      finished.current = true
       setDone(true)
+      setTimeline(null)
       viewer.close()
 
       if (result.cleanupFailures > 0) {
@@ -145,10 +203,12 @@ export default function Library({ trash }: { trash: boolean }) {
           onClick={() => {
             requestVersion.current += 1
             count.current = 0
-            busy.current = false
+            finished.current = false
+            inflight.current = null
             setPhotos([])
             setError('')
             setDone(false)
+            loadTimeline()
           }}
         >
           Reintentar
@@ -208,8 +268,10 @@ export default function Library({ trash }: { trash: boolean }) {
       ) : (
         <Timeline
           photos={photos}
+          timeline={timeline}
           onOpen={viewer.open}
-          onNearEnd={() => void more()}
+          onNearEnd={more}
+          onLoadTo={loadTo}
         />
       )}
 
@@ -238,17 +300,20 @@ export default function Library({ trash }: { trash: boolean }) {
   )
 }
 
+// `first` = posición (en toda la lista) del primer archivo que cubre ese elemento
 type Item =
   | {
       kind: 'header'
       key: string
       size: number
+      first: number
       label: string
     }
   | {
       kind: 'row'
       key: string
       size: number
+      first: number
       height: number
       tiles: { photo: Photo; w: number }[]
     }
@@ -288,6 +353,7 @@ function buildItems(
 
   while (i < photos.length) {
     const key = dayKey(photos[i].taken_at)
+    const groupStart = i
     let j = i
 
     while (j < photos.length && dayKey(photos[j].taken_at) === key) {
@@ -301,11 +367,13 @@ function buildItems(
       kind: 'header',
       key: `h-${key}`,
       size: HEADER_H,
+      first: groupStart,
       label: dayLabel(group[0].taken_at),
     })
 
     let row: Photo[] = []
     let sum = 0
+    let consumed = 0   // archivos del día ya colocados
 
     const flush = (last: boolean) => {
       if (row.length === 0) return
@@ -317,6 +385,7 @@ function buildItems(
         kind: 'row',
         key: `r-${row[0].id}`,
         size: height + GAP,
+        first: groupStart + consumed,
         height,
         tiles: row.map((photo) => ({
           photo,
@@ -324,6 +393,7 @@ function buildItems(
         })),
       })
 
+      consumed += row.length
       row = []
       sum = 0
     }
@@ -345,21 +415,31 @@ function buildItems(
 
 function Timeline({
   photos,
+  timeline,
   onOpen,
   onNearEnd,
+  onLoadTo,
 }: {
   photos: Photo[]
+  timeline: { buckets: Bucket[]; total: number } | null
   onOpen: (id: number) => void
   onNearEnd: () => void
+  onLoadTo: (idx: number) => Promise<number>
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const idle = useRef<number | undefined>(undefined)
   const [box, setBox] = useState(0)
+  const [top, setTop] = useState(0)
+  const [scrolling, setScrolling] = useState(false)
+  const [jump, setJump] = useState<number | null>(null)   // posición a la que se quiere llegar
 
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
 
-    const ro = new ResizeObserver(() => setBox(el.clientWidth))
+    const ro = new ResizeObserver(() => {
+      setBox(el.clientWidth)
+    })
 
     ro.observe(el)
     setBox(el.clientWidth)
@@ -367,12 +447,17 @@ function Timeline({
     return () => ro.disconnect()
   }, [])
 
-  const pad = box < 700 ? 8 : 24
-  const target = box < 700 ? 120 : box < 1100 ? 180 : 230
+  useEffect(() => () => window.clearTimeout(idle.current), [])
+
+  // A la derecha queda sitio para la regla del scrubber.
+  const compact = box < 700
+  const pad = compact ? 8 : 24
+  const padRight = compact ? 44 : 60
+  const target = compact ? 120 : box < 1100 ? 180 : 230
 
   const items = useMemo(
-    () => buildItems(photos, box - pad * 2, target),
-    [photos, box, pad, target],
+    () => buildItems(photos, box - pad - padRight, target),
+    [photos, box, pad, padRight, target],
   )
 
   const virt = useVirtualizer({
@@ -396,100 +481,156 @@ function Timeline({
     }
   }, [last, items.length, onNearEnd])
 
+  // Primer archivo visible: el scrubber lo usa para saber en qué fecha estás.
+  const topItem = visible.find((v) => v.start + v.size > top) ?? visible[0]
+  const firstIndex = topItem ? (items[topItem.index]?.first ?? 0) : 0
+
+  function onScroll(e: UIEvent<HTMLDivElement>) {
+    setTop(e.currentTarget.scrollTop)
+    setScrolling(true)
+    window.clearTimeout(idle.current)
+    idle.current = window.setTimeout(() => setScrolling(false), 900)
+  }
+
+  // Salto pedido desde el scrubber: espera a que esa posición esté cargada y entonces hace scroll.
+  useEffect(() => {
+    if (jump === null || items.length === 0 || photos.length <= jump) return
+
+    let i = 0
+    for (let k = 0; k < items.length; k++) {
+      if (items[k].first <= jump) i = k
+      else break
+    }
+    if (i > 0 && items[i - 1].kind === 'header') i--   // incluye el encabezado del día
+
+    virt.scrollToIndex(i, { align: 'start' })
+    setJump(null)
+  }, [jump, items, photos.length, virt])
+
+  function seek(idx: number, final: boolean) {
+    if (idx < photos.length) {
+      setJump(idx)                // ya cargada: salto inmediato, incluso mientras se arrastra
+    } else if (final) {
+      setJump(idx)                // sin cargar: al soltar se carga y se salta
+      onLoadTo(idx).then((n) => setJump(Math.max(0, Math.min(idx, n - 1))))
+    }
+  }
+
+  const showScrubber = Boolean(
+    timeline &&
+    timeline.total > 0 &&
+    timeline.buckets.length > 0
+  )
+
   return (
-    <div ref={scrollRef} className="grid-scroll">
-      <div
-        className="timeline"
-        style={{ height: virt.getTotalSize() + 24, position: 'relative' }}
-      >
-        {visible.map((v) => {
-          const item = items[v.index]
+    <div className="timeline-wrap">
+      <div ref={scrollRef} className="grid-scroll" onScroll={onScroll}>
+        <div
+          className="timeline"
+          style={{ height: virt.getTotalSize() + 24, position: 'relative' }}
+        >
+          {visible.map((v) => {
+            const item = items[v.index]
 
-          const place = {
-            position: 'absolute' as const,
-            top: 0,
-            left: 0,
-            width: '100%',
-            transform: `translateY(${v.start}px)`,
-            paddingLeft: pad,
-            paddingRight: pad,
-            boxSizing: 'border-box' as const,
-          }
+            const place = {
+              position: 'absolute' as const,
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${v.start}px)`,
+              paddingLeft: pad,
+              paddingRight: padRight,
+              boxSizing: 'border-box' as const,
+            }
 
-          if (item.kind === 'header') {
+            if (item.kind === 'header') {
+              return (
+                <h2
+                  key={v.key}
+                  className="day-header"
+                  style={{ ...place, height: item.size, margin: 0 }}
+                >
+                  {item.label}
+                </h2>
+              )
+            }
+
             return (
-              <h2
+              <div
                 key={v.key}
-                className="day-header"
-                style={{ ...place, height: item.size, margin: 0 }}
+                className="photo-row"
+                style={{ ...place, height: item.height, display: 'flex', gap: GAP }}
               >
-                {item.label}
-              </h2>
+                {item.tiles.map(({ photo, w }) => {
+                  const isVideo = photo.media_type === 'video'
+
+                  return (
+                    <button
+                      key={photo.id}
+                      type="button"
+                      className={`tile${isVideo ? ' tile-video' : ''}`}
+                      style={{
+                        width: w,
+                        height: item.height,
+                        flex: '0 0 auto',
+                        position: 'relative',
+                        overflow: 'hidden',
+                      }}
+                      onClick={() => onOpen(photo.id)}
+                      aria-label={
+                        isVideo
+                          ? `Reproducir vídeo: ${photo.original_name}`
+                          : photo.original_name
+                      }
+                      title={photo.original_name}
+                    >
+                      <img
+                        src={api.thumb(photo.id)}
+                        alt=""
+                        loading="lazy"
+                      />
+
+                      {isVideo && (
+                        <>
+                          <span
+                            className="tile-video-play"
+                            aria-hidden="true"
+                            style={{
+                              position: 'absolute',
+                              left: '50%',
+                              top: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            ▶
+                          </span>
+                          <span className="tile-video-label" aria-hidden="true">
+                            VIDEO{photo.duration ? ` · ${Math.floor(photo.duration / 60)}:${String(Math.floor(photo.duration % 60)).padStart(2, '0')}` : ''}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             )
-          }
-
-          return (
-            <div
-              key={v.key}
-              className="photo-row"
-              style={{ ...place, height: item.height, display: 'flex', gap: GAP }}
-            >
-              {item.tiles.map(({ photo, w }) => {
-                const isVideo = photo.media_type === 'video'
-
-                return (
-                  <button
-                    key={photo.id}
-                    type="button"
-                    className={`tile${isVideo ? ' tile-video' : ''}`}
-                    style={{
-                      width: w,
-                      height: item.height,
-                      flex: '0 0 auto',
-                      position: 'relative',
-                      overflow: 'hidden',
-                    }}
-                    onClick={() => onOpen(photo.id)}
-                    aria-label={
-                      isVideo
-                        ? `Reproducir vídeo: ${photo.original_name}`
-                        : photo.original_name
-                    }
-                    title={photo.original_name}
-                  >
-                    <img
-                      src={api.thumb(photo.id)}
-                      alt=""
-                      loading="lazy"
-                    />
-
-                    {isVideo && (
-                      <>
-                        <span
-                          className="tile-video-play"
-                          aria-hidden="true"
-                          style={{
-                            position: 'absolute',
-                            left: '50%',
-                            top: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            pointerEvents: 'none',
-                          }}
-                        >
-                          ▶
-                        </span>
-                        <span className="tile-video-label" aria-hidden="true">
-                          VIDEO
-                        </span>
-                      </>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          )
-        })}
+          })}
+        </div>
       </div>
+
+      {timeline && showScrubber && (
+        <Scrubber
+          buckets={timeline.buckets}
+          total={timeline.total}
+          firstIndex={firstIndex}
+          scrolling={scrolling}
+          loading={jump !== null}
+          compact={compact}
+          onSeek={seek}
+          onWheel={(dy) => scrollRef.current?.scrollBy({ top: dy })}
+        />
+      )}
     </div>
   )
 }

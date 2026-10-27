@@ -6,6 +6,7 @@ const paths = {
       <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
     </>
   ),
+
   albums: (
     <>
       <path d="M18 22H4a2 2 0 0 1-2-2V6" />
@@ -14,6 +15,7 @@ const paths = {
       <rect width="16" height="16" x="6" y="2" rx="2" />
     </>
   ),
+
   trash: (
     <>
       <path d="M3 6h18" />
@@ -23,12 +25,20 @@ const paths = {
       <line x1="14" x2="14" y1="11" y2="17" />
     </>
   ),
+  restore: (
+    <>
+      <path d="M3 7v6h6" />
+      <path d="M3 13a9 9 0 1 0 3-7" />
+    </>
+  ),
+
   shield: (
     <>
       <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
       <path d="m9 12 2 2 4-4" />
     </>
   ),
+
   logout: (
     <>
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -36,8 +46,49 @@ const paths = {
       <line x1="21" x2="9" y1="12" y2="12" />
     </>
   ),
-}
 
+  // Compartir
+  share: (
+    <>
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.7 10.7 6.6-4.4" />
+      <path d="m8.7 13.3 6.6 4.4" />
+    </>
+  ),
+
+  // Volver atrás
+  back: (
+    <>
+      <path d="m15 18-6-6 6-6" />
+      <path d="M9 12h12" />
+    </>
+  ),
+
+  // Anterior / Preview
+  previous: (
+    <>
+      <path d="m15 18-6-6 6-6" />
+    </>
+  ),
+
+  // Siguiente / Next
+  next: (
+    <>
+      <path d="m9 18 6-6-6-6" />
+    </>
+  ),
+
+  // Detalles / Información
+  details: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v6" />
+      <path d="M12 7h.01" />
+    </>
+  ),
+}
 export default function Icon({ name }: { name: keyof typeof paths }) {
   return (
     <svg

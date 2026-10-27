@@ -1,4 +1,4 @@
-
+import Icon from './Icon'
 import { useEffect } from 'react'
 import { api, type Photo } from '../api'
 
@@ -47,7 +47,7 @@ export default function Viewer({
   const isVideo = photo?.media_type === 'video'
 
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay">
       {isVideo ? (
         <video
           key={id}
@@ -71,50 +71,52 @@ export default function Viewer({
           onClick={(event) => event.stopPropagation()}
         />
       )}
-
-      <div className="viewer-bar" onClick={(event) => event.stopPropagation()}>
-        <span>{photo?.original_name ?? ''}</span>
-
-        <div className="viewer-actions">
+      <div className='viewer-bar-2'>
+        <button className='close' type="button" onClick={onClose}>
+          <Icon name="back" />
+        </button>
+        <div>
+          <span>{photo?.original_name ?? ''}</span>
+          <button onClick={onClose}>
+            <Icon name="share" />
+          </button>
+          <button onClick={onClose}>
+            <Icon name="share" />
+          </button>
           {action && (
             <button type="button" onClick={() => void runAction()}>
-              {action.label}
+              <Icon name={action.label === "Restaurar" ? "restore" : "trash"} />
             </button>
           )}
-
-          <button type="button" onClick={onClose}>
-            Cerrar
-          </button>
         </div>
       </div>
-
-      {onPrev && (
+      <div className="viewer-change">
         <button
           type="button"
           className="viewer-nav viewer-prev"
           aria-label="Anterior"
           onClick={(event) => {
             event.stopPropagation()
-            onPrev()
+            onPrev?.()
           }}
+          disabled={!onPrev}
         >
-          ‹
+          <Icon name="previous" />
         </button>
-      )}
 
-      {onNext && (
         <button
           type="button"
           className="viewer-nav viewer-next"
           aria-label="Siguiente"
           onClick={(event) => {
             event.stopPropagation()
-            onNext()
+            onNext?.()
           }}
+          disabled={!onNext}
         >
-          ›
+          <Icon name="next" />
         </button>
-      )}
+      </div>
     </div>
   )
 }

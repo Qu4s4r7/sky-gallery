@@ -46,6 +46,11 @@ export type AlbumPhotos = {
   photos: Photo[]
 }
 
+export type TimelineRow = {
+  ym: string;
+  n: number
+}
+
 export const fmtBytes = (n: number) =>
   n >= 1024 ** 3
     ? `${(n / 1024 ** 3).toFixed(1)} GB`
@@ -92,6 +97,11 @@ export const api = {
   photos: (offset: number, limit: number, trash: boolean) =>
     request<Photo[]>(
       `/api/photos?offset=${offset}&limit=${limit}${trash ? '&trash=1' : ''}`,
+    ),
+
+  timeline: (trash: boolean) =>
+    request<TimelineRow[]>(
+      `/api/timeline?tz=${new Date().getTimezoneOffset()}${trash ? '&trash=1' : ''}`,
     ),
 
   emptyTrash: () =>
