@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
 export type Bucket = {
@@ -16,11 +17,6 @@ type ScrubberProps = {
   onSeek: (index: number, final: boolean) => void
   onWheel: (deltaY: number) => void
 }
-
-const MONTHS = [
-  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
-]
 
 const MONTHS_FULL = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -159,7 +155,6 @@ export default function Scrubber({
   const markerY = clamp(fraction * height, 0, height)
   const selectedIndex = pointing ? indexOf(fraction) : firstIndex
   const selectedBucket = bucketAt(selectedIndex)
-
   const date = selectedBucket ? parseYM(selectedBucket.ym) : null
 
   const readoutY = clamp(
@@ -169,28 +164,39 @@ export default function Scrubber({
   )
 
   const percentage = Math.round(fraction * 100)
-
   const active = pointing || scrolling || loading
 
-  // Render a tick for each month bucket, and label the first
-  // month of every year.
-  const ticks = buckets.map((bucket, index) => {
-    const date = parseYM(bucket.ym)
-    const position = (bucket.start / denominator) * height
+  // Agrupar las fotos por año, usando el inicio de cada año
+  // como referencia para la regla temporal.
+  const years = buckets.reduce<{ year: number; start: number }[]>(
+    (result, bucket) => {
+      const year = parseYM(bucket.ym).y
 
-    const previousDate =
-      index > 0 ? parseYM(buckets[index - 1].ym) : null
+      if (!result.some((item) => item.year === year)) {
+        result.push({ year, start: bucket.start })
+      }
 
-    const showYear =
-      previousDate === null || previousDate.y !== date.y
+      return result
+    },
+    [],
+  )
 
-    return {
-      key: `${bucket.ym}-${bucket.start}`,
-      position: clamp(position, 0, height),
-      month: date.m,
-      year: date.y,
-      showYear,
-    }
+  // Cinco marcas por intervalo anual, como las divisiones
+  // de una regla de medir.
+  const ticks = years.flatMap((item, index) => {
+    const next = years[index + 1]
+
+    const start = (item.start / denominator) * height
+    const end = next ? (next.start / denominator) * height : height
+    const interval = end - start
+
+    return Array.from({ length: 5 }, (_, tickIndex) => ({
+      key: `${item.year}-${tickIndex}`,
+      position: clamp(start + (interval * tickIndex) / 5, 0, height),
+      year: item.year,
+      showYear: tickIndex === 0,
+      major: tickIndex === 0,
+    }))
   })
 
   return (
@@ -223,7 +229,7 @@ export default function Scrubber({
       <div className="ruler">
         {ticks.map((tick) => (
           <div
-            className="ruler-tick"
+            className={`ruler-tick${tick.major ? ' ruler-tick-major' : ''}`}
             key={tick.key}
             style={{ top: tick.position }}
           >
@@ -245,24 +251,12 @@ export default function Scrubber({
         className="readout"
         style={{ top: readoutY }}
       >
-        <strong>
-          {loading
-            ? 'Cargando…'
-            : date
-              ? `${MONTHS[date.m - 1]} ${date.y}`
-              : 'Sin fechas'}
-        </strong>
-
-        <span>{percentage} %</span>
-      </div>
-
-      <div
-        className="scrubber-vertical"
-        aria-hidden="true"
-      >
-        {date
-          ? `${MONTHS_FULL[date.m - 1]} ${date.y}`
-          : 'Sin fechas'}
+        {loading
+          ? 'Cargando…'
+          : date
+            ? `${MONTHS_FULL[date.m - 1]} ${date.y}`
+            : 'Sin fechas'}
+        <span>{percentage}%</span>
       </div>
     </div>
   )

@@ -1,0 +1,46 @@
+.scrubber {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  margin: 20px 0;
+  width: 56px;
+  font-family: var(--mono);
+  cursor: ns-resize;
+  touch-action: none;       /* en móvil el gesto arrastra el marcador, no la página */
+  user-select: none;
+}
+.scrubber .marker {
+  position: absolute;
+  right: 20px;
+  width: 0px;
+  height: 2px;
+  background: var(--signal);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--signal) 70%, transparent);
+  pointer-events: none;
+  transition: width 150ms ease;
+}
+.scrubber.active .marker {
+  width: 100px;
+}
+
+.scrubber .readout {
+  position: absolute;
+  right: 64px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  transform: translateY(-50%);
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}

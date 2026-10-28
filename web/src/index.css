@@ -558,44 +558,7 @@ th {
   display: none;
 }
 
-/* marcador azul */
-.scrubber .marker {
-  position: absolute;
-  right: 6px;
-  width: 24px;
-  height: 2px;
-  transform: translateY(-1px);
-  background: var(--signal);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--signal) 70%, transparent);
-  pointer-events: none;
-  transition: width 150ms ease;
-}
 
-.scrubber.active .marker {
-  width: 40px;
-}
-
-/* lectura: MES AÑO + porcentaje */
-.scrubber .readout {
-  position: absolute;
-  right: 64px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.15rem;
-  padding: 0.4rem 0.65rem;
-  transform: translateY(-50%);
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter: blur(8px);
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 150ms ease;
-}
 
 .scrubber .readout strong {
   color: var(--fg);
@@ -1382,7 +1345,6 @@ a.album-card {
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 15;
   width: 56px;
   font-family: var(--mono);
   cursor: ns-resize;
