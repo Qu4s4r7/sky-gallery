@@ -43,9 +43,39 @@ export default function Viewer({
       alert((error as Error).message)
     }
   }
+  async function share() {
+    if (!photo) return
+
+    try {
+      const res = await fetch(api.file(id))
+      if (!res.ok) throw new Error('No se pudo leer el archivo')
+
+      const blob = await res.blob()
+      const file = new File([blob], photo.original_name, {
+        type: blob.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
+      })
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: photo.original_name })
+        return
+      }
+
+      // Respaldo: descargar el archivo
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = photo.original_name
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      // Cerrar el menú de compartir sin elegir lanza AbortError: no es un fallo
+      if ((error as Error).name !== 'AbortError') {
+        alert((error as Error).message)
+      }
+    }
+  }
 
   const isVideo = photo?.media_type === 'video'
-
   return (
     <div className="overlay">
       {isVideo ? (
@@ -71,21 +101,25 @@ export default function Viewer({
           onClick={(event) => event.stopPropagation()}
         />
       )}
-      <div className='viewer-bar-2'>
+      
+      <div className='viewer-bar'>
         <button className='close' type="button" onClick={onClose}>
-          <Icon name="back" />
+          <span className="material-symbols-outlined">
+          arrow_back
+          </span>
         </button>
         <div>
           <span>{photo?.original_name ?? ''}</span>
-          <button onClick={onClose}>
-            <Icon name="share" />
-          </button>
-          <button onClick={onClose}>
-            <Icon name="share" />
+          <button type="button" onClick={() => void share()} disabled={!photo} aria-label="Compartir">
+            <span className="material-symbols-outlined"> 
+              share
+            </span>
           </button>
           {action && (
             <button type="button" onClick={() => void runAction()}>
-              <Icon name={action.label === "Restaurar" ? "restore" : "trash"} />
+              <span className="material-symbols-outlined">
+                delete
+              </span>
             </button>
           )}
         </div>

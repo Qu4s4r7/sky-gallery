@@ -1,33 +1,105 @@
 .scrubber {
+  position: relative;
+  right: 0;
+  z-index: 5;
+  width: 40px;
+  height: 100%;
+  font-family: var(--mono);
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  display: flex;
+}
+
+/* Regla vertical */
+.scrubber .meter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* Cada marca */
+.scrubber .meter-mark {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* Marcas pequeñas */
+.scrubber .line {
+  display: block;
+  width: 8px;
+  height: 1px;
+  flex-shrink: 0;
+  background-color: #555;
+}
+
+/* Marcas cada 5 cm */
+.scrubber .line-long {
+  width: 20px;
+  background-color: #888;
+}
+
+/* Números */
+.scrubber .meter-label {
+  font-size: 10px;
+  line-height: 1;
+  color: white;
+}
+
+.scrubber .scrubber-years {
+  position: absolute;
+  right: 40px;
+  width: 30px;
+  height: calc(100% - 40px);
+  pointer-events: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.scrubber .scrubber-year {
+  color: var(--signal);
+  font-size: 10px;
+  font-weight: bold;
+  opacity: 1;
+  margin-top: 10px;
+  height: 100%;
+}
+
+/* Marcador de posición */
+.scrubber .marker {
   position: absolute;
   top: 0;
   right: 0;
-  bottom: 0;
-  z-index: 5;
-  margin: 20px 0;
-  width: 56px;
-  font-family: var(--mono);
-  cursor: ns-resize;
-  touch-action: none;       /* en móvil el gesto arrastra el marcador, no la página */
-  user-select: none;
-}
-.scrubber .marker {
-  position: absolute;
-  right: 20px;
-  width: 0px;
-  height: 2px;
+  width: 20px;
+  height: 1px;
   background: var(--signal);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--signal) 70%, transparent);
+  box-shadow: 0 0 10px
+    color-mix(in srgb, var(--signal) 70%, transparent);
   pointer-events: none;
   transition: width 150ms ease;
 }
+
 .scrubber.active .marker {
-  width: 100px;
+  width: 100%;
 }
 
+/* Fecha seleccionada */
 .scrubber .readout {
   position: absolute;
-  right: 64px;
+  right: 80px;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -43,4 +115,8 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms ease;
+}
+
+.scrubber.active .readout {
+  opacity: 1;
 }

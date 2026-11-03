@@ -8,7 +8,7 @@ import Scrubber, { type Bucket } from './Scrubber'
 const PAGE = 200
 const JUMP_PAGE = 500   // al saltar a una fecha lejana se carga en trozos grandes
 const GAP = 4
-const HEADER_H = 52
+const DEFAULT_COLS = 7  // se usa si --photo-cols no está definida en el CSS
 
 export default function Library({ trash }: { trash: boolean }) {
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -301,117 +301,50 @@ export default function Library({ trash }: { trash: boolean }) {
 }
 
 // `first` = posición (en toda la lista) del primer archivo que cubre ese elemento
-type Item =
-  | {
-      kind: 'header'
-      key: string
-      size: number
-      first: number
-      label: string
-    }
-  | {
-      kind: 'row'
-      key: string
-      size: number
-      first: number
-      height: number
-      tiles: { photo: Photo; w: number }[]
-    }
-
-const ratio = (p: Photo) =>
-  p.width && p.height
-    ? Math.min(Math.max(p.width / p.height, 0.5), 3)
-    : 1.5
-
-const dayKey = (t: number) => {
-  const d = new Date(t)
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+type Item = {
+  kind: 'row'
+  key: string
+  size: number
+  first: number
+  height: number
+  tiles: { photo: Photo; w: number }[]
 }
 
-const dayLabel = (t: number) => {
-  const d = new Date(t)
-  const thisYear = d.getFullYear() === new Date().getFullYear()
-
-  return d.toLocaleDateString('es', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    ...(thisYear ? {} : { year: 'numeric' }),
-  })
+// Lee --photo-cols del CSS (se puede cambiar en :root o en las media queries).
+function readCols(): number {
+  const v = parseInt(
+    getComputedStyle(document.documentElement).getPropertyValue('--photo-cols'),
+    10,
+  )
+  return v > 0 ? v : DEFAULT_COLS
 }
 
 function buildItems(
   photos: Photo[],
   width: number,
-  target: number,
+  cols: number,
 ): Item[] {
   const items: Item[] = []
-
   if (width <= 0) return items
 
-  let i = 0
+  const size = Math.max(1, (width - GAP * (cols - 1)) / cols)
 
-  while (i < photos.length) {
-    const key = dayKey(photos[i].taken_at)
-    const groupStart = i
-    let j = i
-
-    while (j < photos.length && dayKey(photos[j].taken_at) === key) {
-      j++
-    }
-
-    const group = photos.slice(i, j)
-    i = j
+  for (let k = 0; k < photos.length; k += cols) {
+    const chunk = photos.slice(k, k + cols)
 
     items.push({
-      kind: 'header',
-      key: `h-${key}`,
-      size: HEADER_H,
-      first: groupStart,
-      label: dayLabel(group[0].taken_at),
+      kind: 'row',
+      key: `r-${chunk[0].id}`,
+      size: size + GAP,
+      first: k,
+      height: size,
+      tiles: chunk.map((photo) => ({ photo, w: size })),
     })
-
-    let row: Photo[] = []
-    let sum = 0
-    let consumed = 0   // archivos del día ya colocados
-
-    const flush = (last: boolean) => {
-      if (row.length === 0) return
-
-      const fit = (width - GAP * (row.length - 1)) / sum
-      const height = last ? Math.min(fit, target) : fit
-
-      items.push({
-        kind: 'row',
-        key: `r-${row[0].id}`,
-        size: height + GAP,
-        first: groupStart + consumed,
-        height,
-        tiles: row.map((photo) => ({
-          photo,
-          w: ratio(photo) * height,
-        })),
-      })
-
-      consumed += row.length
-      row = []
-      sum = 0
-    }
-
-    for (const photo of group) {
-      row.push(photo)
-      sum += ratio(photo)
-
-      if ((width - GAP * (row.length - 1)) / sum <= target) {
-        flush(false)
-      }
-    }
-
-    flush(true)
   }
 
   return items
 }
+
 
 function Timeline({
   photos,
@@ -429,6 +362,7 @@ function Timeline({
   const scrollRef = useRef<HTMLDivElement>(null)
   const idle = useRef<number | undefined>(undefined)
   const [box, setBox] = useState(0)
+  const [cols, setCols] = useState(DEFAULT_COLS)
   const [top, setTop] = useState(0)
   const [scrolling, setScrolling] = useState(false)
   const [jump, setJump] = useState<number | null>(null)   // posición a la que se quiere llegar
@@ -437,12 +371,15 @@ function Timeline({
     const el = scrollRef.current
     if (!el) return
 
-    const ro = new ResizeObserver(() => {
+    const read = () => {
       setBox(el.clientWidth)
-    })
+      setCols(readCols())
+    }
+
+    const ro = new ResizeObserver(read)
 
     ro.observe(el)
-    setBox(el.clientWidth)
+    read()
 
     return () => ro.disconnect()
   }, [])
@@ -451,13 +388,9 @@ function Timeline({
 
   // A la derecha queda sitio para la regla del scrubber.
   const compact = box < 700
-  const pad = compact ? 8 : 24
-  const padRight = compact ? 44 : 60
-  const target = compact ? 120 : box < 1100 ? 180 : 230
-
   const items = useMemo(
-    () => buildItems(photos, box - pad - padRight, target),
-    [photos, box, pad, padRight, target],
+    () => buildItems(photos, box, cols),
+    [photos, box, cols],
   )
 
   const virt = useVirtualizer({
@@ -501,7 +434,6 @@ function Timeline({
       if (items[k].first <= jump) i = k
       else break
     }
-    if (i > 0 && items[i - 1].kind === 'header') i--   // incluye el encabezado del día
 
     virt.scrollToIndex(i, { align: 'start' })
     setJump(null)
@@ -533,33 +465,17 @@ function Timeline({
             const item = items[v.index]
 
             const place = {
-              position: 'absolute' as const,
               top: 0,
               left: 0,
               width: '100%',
-              transform: `translateY(${v.start}px)`,
-              paddingLeft: pad,
-              paddingRight: padRight,
-              boxSizing: 'border-box' as const,
             }
 
-            if (item.kind === 'header') {
-              return (
-                <h2
-                  key={v.key}
-                  className="day-header"
-                  style={{ ...place, height: item.size, margin: 0 }}
-                >
-                  {item.label}
-                </h2>
-              )
-            }
 
             return (
               <div
                 key={v.key}
                 className="photo-row"
-                style={{ ...place, height: item.height, display: 'flex', gap: GAP }}
+                style={{ ...place, height: item.height, display: 'flex', gap: GAP, marginBottom: GAP}}
               >
                 {item.tiles.map(({ photo, w }) => {
                   const isVideo = photo.media_type === 'video'
@@ -572,9 +488,6 @@ function Timeline({
                       style={{
                         width: w,
                         height: item.height,
-                        flex: '0 0 auto',
-                        position: 'relative',
-                        overflow: 'hidden',
                       }}
                       onClick={() => onOpen(photo.id)}
                       aria-label={
