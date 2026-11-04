@@ -196,6 +196,17 @@ export default function Scrubber({
     },
     [],
   )
+  const yearMarks = years.reduce<{ year: number; y: number }[]>(
+    (result, { year, start }) => {
+      const y = (start / denominator) * height
+      const prev = result[result.length - 1]
+
+      if (!prev || y - prev.y >= 18) result.push({ year, y })
+
+      return result
+    },
+    [],
+  )
 
   return (
     <div
@@ -227,13 +238,11 @@ export default function Scrubber({
       <Meter />
 
       <div className="scrubber-years" aria-hidden="true">
-        {years.map(({ year, start }) => (
+        {yearMarks.map(({ year, y }) => (
           <span
             key={year}
             className="scrubber-year"
-            style={{
-              marginTop: `${(start / denominator) * 100}%`,
-            }}
+            style={{ top: y }}
           >
             {year}
           </span>

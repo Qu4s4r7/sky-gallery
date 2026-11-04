@@ -140,7 +140,7 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
           onClick={() => filesInput.current?.click()}
           disabled={busy}
         >
-          {busy ? `Subiendo ${progress}%` : 'Subir fotos y vídeos'}
+          {busy ? `Subiendo ${progress}%` : 'Subir'}
         </button>
 
         <button

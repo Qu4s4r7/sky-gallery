@@ -60,22 +60,22 @@
 
 .scrubber .scrubber-years {
   position: absolute;
+  top: 0;
   right: 40px;
   width: 30px;
-  height: calc(100% - 40px);
+  height: 100%;
   pointer-events: none;
   overflow: visible;
-  display: flex;
-  flex-direction: column;
 }
 
 .scrubber .scrubber-year {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
   color: var(--signal);
   font-size: 10px;
   font-weight: bold;
-  opacity: 1;
-  margin-top: 10px;
-  height: 100%;
+  line-height: 1;
 }
 
 /* Marcador de posición */

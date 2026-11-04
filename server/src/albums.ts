@@ -6,6 +6,7 @@ import { requireUser } from './auth.js'
 type AlbumBody = {
   name?: unknown
   description?: unknown
+  cover_photo_id?: unknown
 }
 
 type AlbumPhotosBody = {
@@ -59,23 +60,24 @@ export function albumRoutes(app: FastifyInstance) {
     async (req) => {
       return db.all(
         `SELECT
-           a.id,
-           a.user_id,
-           a.name,
-           a.description,
-           a.created_at,
-           a.updated_at,
-           (
-             SELECT COUNT(*)
-             FROM album_photos ap
-             JOIN photos p ON p.id = ap.photo_id
-             WHERE ap.album_id = a.id
-               AND p.user_id = a.user_id
-               AND p.deleted_at IS NULL
-           ) AS photo_count
-         FROM albums a
-         WHERE a.user_id = ?
-         ORDER BY a.created_at DESC`,
+          a.id,
+          a.user_id,
+          a.name,
+          a.description,
+          a.created_at,
+          a.updated_at,
+          a.cover_photo_id,
+          (
+            SELECT COUNT(*)
+            FROM album_photos ap
+            JOIN photos p ON p.id = ap.photo_id
+            WHERE ap.album_id = a.id
+              AND p.user_id = a.user_id
+              AND p.deleted_at IS NULL
+          ) AS photo_count
+        FROM albums a
+        WHERE a.user_id = ?
+        ORDER BY a.created_at DESC`,
         [req.user!.id],
       )
     },
@@ -127,7 +129,8 @@ export function albumRoutes(app: FastifyInstance) {
              name,
              description,
              created_at,
-             updated_at`,
+             updated_at,
+             cover_photo_id`,
           [req.user!.id, name, description, now, now],
         )
 
@@ -146,40 +149,8 @@ export function albumRoutes(app: FastifyInstance) {
     },
   )
 
-  // GET /api/albums/:id
-  // Consulta los datos de un álbum propio.
-  app.get(
-    '/api/albums/:id',
-    { preHandler: requireUser },
-    async (req, reply) => {
-      const { id: rawId } = req.params as { id: string }
-      const albumId = parseId(rawId)
-
-      if (albumId === null) {
-        return reply.code(400).send({
-          error: 'ID de álbum inválido',
-        })
-      }
-
-      const album = await db.get(
-        `SELECT *
-         FROM albums
-         WHERE id = ? AND user_id = ?`,
-        [albumId, req.user!.id],
-      )
-
-      if (!album) {
-        return reply.code(404).send({
-          error: 'Álbum no encontrado',
-        })
-      }
-
-      return album
-    },
-  )
-
   // PATCH /api/albums/:id
-  // Actualiza el nombre o la descripción.
+  // Actualiza nombre, descripción y fotografía de portada.
   app.patch(
     '/api/albums/:id',
     { preHandler: requireUser },
@@ -195,17 +166,23 @@ export function albumRoutes(app: FastifyInstance) {
 
       const body = (req.body ?? {}) as AlbumBody
 
-      if (body.name === undefined && body.description === undefined) {
+      if (
+        body.name === undefined &&
+        body.description === undefined &&
+        body.cover_photo_id === undefined
+      ) {
         return reply.code(400).send({
-          error: 'Debes proporcionar un nombre o una descripción',
+          error: 'Debes proporcionar algún campo para actualizar',
         })
       }
 
       if (
         body.name !== undefined &&
-        (typeof body.name !== 'string' ||
+        (
+          typeof body.name !== 'string' ||
           !body.name.trim() ||
-          body.name.trim().length > 100)
+          body.name.trim().length > 100
+        )
       ) {
         return reply.code(400).send({
           error: 'El nombre debe tener entre 1 y 100 caracteres',
@@ -214,8 +191,10 @@ export function albumRoutes(app: FastifyInstance) {
 
       if (
         body.description !== undefined &&
-        (typeof body.description !== 'string' ||
-          body.description.trim().length > 1000)
+        (
+          typeof body.description !== 'string' ||
+          body.description.trim().length > 1000
+        )
       ) {
         return reply.code(400).send({
           error: 'La descripción no puede superar los 1000 caracteres',
@@ -234,20 +213,76 @@ export function albumRoutes(app: FastifyInstance) {
       }
 
       const name =
-        body.name === undefined ? existing.name : (body.name as string).trim()
+        body.name === undefined
+          ? existing.name
+          : (body.name as string).trim()
 
       const description =
         body.description === undefined
           ? existing.description
           : (body.description as string).trim()
 
+      let coverPhotoId: number | null = existing.cover_photo_id ?? null
+
+      if (body.cover_photo_id !== undefined) {
+        if (body.cover_photo_id === null) {
+          coverPhotoId = null
+        } else {
+          const value = body.cover_photo_id
+
+          const parsed =
+            typeof value === 'number'
+              ? value
+              : typeof value === 'string' && /^[1-9]\d*$/.test(value)
+                ? Number(value)
+                : NaN
+
+          if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+            return reply.code(400).send({
+              error: 'ID de portada inválido',
+            })
+          }
+
+          // La fotografía debe pertenecer al usuario,
+          // estar activa y formar parte del álbum.
+          const photo = await db.get(
+            `SELECT p.id
+             FROM photos p
+             JOIN album_photos ap ON ap.photo_id = p.id
+             WHERE p.id = ?
+               AND p.user_id = ?
+               AND p.deleted_at IS NULL
+               AND ap.album_id = ?`,
+            [parsed, req.user!.id, albumId],
+          )
+
+          if (!photo) {
+            return reply.code(400).send({
+              error: 'La fotografía seleccionada no pertenece a este álbum',
+            })
+          }
+
+          coverPhotoId = parsed
+        }
+      }
+
       try {
         const result = await db.run(
           `UPDATE albums
-           SET name = ?, description = ?, updated_at = ?
+           SET name = ?,
+               description = ?,
+               cover_photo_id = ?,
+               updated_at = ?
            WHERE id = ? AND user_id = ?
            RETURNING *`,
-          [name, description, Date.now(), albumId, req.user!.id],
+          [
+            name,
+            description,
+            coverPhotoId,
+            Date.now(),
+            albumId,
+            req.user!.id,
+          ],
         )
 
         return result.rows[0]
@@ -307,7 +342,7 @@ export function albumRoutes(app: FastifyInstance) {
   )
 
   // POST /api/albums/:id/photos
-  // Body: { "photo_ids": [1, 2, 3] }
+  // Añade fotografías al álbum.
   app.post(
     '/api/albums/:id/photos',
     { preHandler: requireUser },
@@ -360,8 +395,6 @@ export function albumRoutes(app: FastifyInstance) {
 
       const now = Date.now()
 
-      // Una transacción evita dejar el álbum a medio actualizar
-      // si falla una de las inserciones.
       const result = await db.run(
         `INSERT INTO album_photos (album_id, photo_id, added_at)
          SELECT ?, p.id, ?
@@ -382,7 +415,7 @@ export function albumRoutes(app: FastifyInstance) {
   )
 
   // DELETE /api/albums/:id/photos/:photoId
-  // Quita una foto del álbum, pero no borra la foto original.
+  // Quita una foto del álbum, pero no borra el archivo original.
   app.delete(
     '/api/albums/:id/photos/:photoId',
     { preHandler: requireUser },
@@ -419,6 +452,17 @@ export function albumRoutes(app: FastifyInstance) {
           error: 'No se encontró esa fotografía en tu álbum',
         })
       }
+
+      // Si era la portada, la quitamos.
+      await db.run(
+        `UPDATE albums
+         SET cover_photo_id = NULL,
+             updated_at = ?
+         WHERE id = ?
+           AND user_id = ?
+           AND cover_photo_id = ?`,
+        [Date.now(), albumId, req.user!.id, photoId],
+      )
 
       return { ok: true }
     },

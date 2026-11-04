@@ -553,6 +553,16 @@ export function photoRoutes(app: FastifyInstance) {
        WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
       [Date.now(), photoId(req), req.user!.id],
     )
+    if (result.changes) {
+      await db.run(
+        `UPDATE albums
+        SET cover_photo_id = NULL,
+            updated_at = ?
+        WHERE cover_photo_id = ?
+          AND user_id = ?`,
+        [Date.now(), photoId(req), req.user!.id],
+      )
+    }
 
     return result.changes
       ? { ok: true }

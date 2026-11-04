@@ -1,0 +1,191 @@
+/* =========================================================
+   Pantallas pequeñas
+   ========================================================= */
+
+@media (max-width: 700px) {
+  :root {
+    --photo-cols: 3;
+  }
+
+  .page {
+    padding: 12px;
+  }
+
+  .albums {
+    padding: 12px;
+  }
+
+  .album-toolbar {
+    gap: 8px;
+  }
+
+  .album-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .album-card {
+    min-height: 130px;
+    padding: 12px;
+  }
+
+  .album-photo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .album-picker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .album-picker-item {
+    padding: 4px;
+  }
+}
+
+/* =========================================================
+   Navegación inferior en móviles
+   ========================================================= */
+
+@media (max-width: 800px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 56px minmax(0, 1fr) 64px;
+    grid-template-areas:
+      "top"
+      "main"
+      "side";
+  }
+
+  .topbar {
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+  }
+
+  .brand {
+    width: auto;
+    font-size: 1rem;
+  }
+
+  .upload-slot .muted {
+    display: none;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+    overflow: visible;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+  }
+
+  .nav-item {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.15rem;
+    padding: 0.4rem 0;
+    border-radius: 0;
+    font-size: 0.7rem;
+  }
+
+  .nav-item.active {
+    background: transparent;
+  }
+
+  .storage {
+    display: none;
+  }
+
+  .sg-upload {
+    justify-content: flex-end;
+  }
+
+  .sg-upload-actions {
+    gap: 5px;
+  }
+
+  .sg-upload-actions .sg-upload-button,
+  .sg-upload-actions .sg-folder-upload-button {
+    min-height: 40px;
+    gap: 5px;
+    padding: 0 11px;
+    font-size: 0.78rem;
+  }
+
+  .sg-upload-status {
+    width: 100%;
+    text-align: right;
+  }
+}
+
+/* =========================================================
+   Papelera en móviles
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .sg-trash-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px 16px;
+  }
+
+  .sg-empty-trash-button {
+    width: 100%;
+  }
+
+  .sg-trash-notice {
+    margin-inline: 16px;
+  }
+}
+
+/* =========================================================
+   Teléfonos pequeños
+   ========================================================= */
+
+@media (max-width: 390px) {
+  .sg-upload-actions .sg-upload-button,
+  .sg-upload-actions .sg-folder-upload-button {
+    padding-inline: 8px;
+    font-size: 0.73rem;
+  }
+}
+
+@media (max-width: 380px) {
+  :root {
+    --photo-cols: 2;
+  }
+
+  .album-list {
+    grid-template-columns: 1fr;
+  }
+
+  .album-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .brand {
+    font-size: 0.92rem;
+  }
+}
+
+/* =========================================================
+   Accesibilidad: reducir animaciones
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .sg-upload-spinner {
+    animation: none;
+  }
+}

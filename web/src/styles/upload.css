@@ -1,0 +1,129 @@
+/* =========================================================
+   Carga de fotografías y carpetas
+   ========================================================= */
+
+.sg-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sg-hidden-input {
+  display: none !important;
+}
+
+.sg-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sg-upload-actions .sg-upload-button,
+.sg-upload-actions .sg-folder-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.sg-upload-actions .sg-upload-button {
+  background: var(--sg-primary);
+  color: var(--sg-on-primary);
+}
+
+.sg-upload-actions .sg-upload-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: transparent;
+}
+
+.sg-upload-actions .sg-folder-upload-button {
+  border: 1px solid var(--line);
+  background: var(--sg-container);
+  color: var(--fg);
+}
+
+.sg-upload-actions .sg-folder-upload-button:hover:not(:disabled) {
+  background: var(--sg-container-high);
+  border-color: var(--sg-outline);
+}
+
+.sg-upload-actions button:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.sg-upload-status {
+  color: var(--muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.sg-upload-spinner {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sg-upload-spin 700ms linear infinite;
+}
+
+.sg-upload-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 45vh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 16%);
+}
+
+.sg-upload-errors strong {
+  color: var(--danger);
+}
+
+.sg-upload-errors small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.sg-upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--sg-on-surface-variant);
+}
+
+.sg-upload-progress-track {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--sg-container-high);
+}
+
+.sg-upload-progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sg-primary);
+  transition: width 180ms ease;
+}
+
+@keyframes sg-upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

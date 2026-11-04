@@ -1,0 +1,269 @@
+/* =========================================================
+   Estructura de la aplicación
+   ========================================================= */
+
+.app {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-areas:
+    "top top"
+    "side main";
+  height: 100dvh;
+  min-height: 0;
+}
+
+.topbar {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0 1rem 0 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 226px;
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.upload-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.upload-slot > button {
+  padding: 0.5rem 1.2rem;
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.upload-slot > button:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--accent-hover);
+}
+
+/* =========================================================
+   Navegación
+   ========================================================= */
+
+.avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.icon-btn {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border-color: transparent;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.icon-btn:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.sidebar {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 10px 1rem;
+  color: var(--fg);
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.nav-item:hover {
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
+.nav-item.active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.storage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding: 1rem 0 0 1.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.storage-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.storage-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* =========================================================
+   Área principal
+   ========================================================= */
+
+.content {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: #111;
+  border-radius: 10px;
+  margin: 10px;
+  padding: 10px;
+}
+
+/* =========================================================
+   Enlaces y botones compartidos
+   ========================================================= */
+
+a.btn {
+  display: inline-block;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+  text-decoration: none;
+  transition: border-color 150ms ease;
+}
+
+a.btn:hover {
+  border-color: var(--accent);
+}
+
+button.danger {
+  border-color: transparent;
+  background: var(--danger);
+  color: #fff;
+}
+
+button.danger:hover:not(:disabled) {
+  border-color: transparent;
+  filter: brightness(0.92);
+}
+
+/* =========================================================
+   Tarjetas y formularios compartidos
+   ========================================================= */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(360px, 92vw);
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.card.wide {
+  width: min(1000px, 94vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.card form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* =========================================================
+   Diálogos y opciones compartidas
+   ========================================================= */
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.choice input {
+  margin-top: 0.25rem;
+  accent-color: var(--accent);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+/* =========================================================
+   Tablas
+   ========================================================= */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td,
+th {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+td.actions {
+  text-align: right;
+}

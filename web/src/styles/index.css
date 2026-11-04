@@ -1,0 +1,161 @@
+/* =========================================================
+   Variables y tema
+   ========================================================= */
+
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+
+  --bg: #fff;
+  --fg: #1a1a1a;
+  --muted: #777;
+  --card: #f4f4f5;
+  --line: #ddd;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --on-accent: #fff;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --signal: #2563eb;
+  --ruler: color-mix(in srgb, var(--fg) 35%, transparent);
+  --danger: #dc2626;
+  --radius: 10px;
+
+  --sg-primary: var(--accent);
+  --sg-on-primary: var(--on-accent);
+  --sg-container: var(--card);
+  --sg-container-high: color-mix(in srgb, var(--card) 88%, var(--fg) 12%);
+  --sg-outline: var(--muted);
+  --sg-on-surface-variant: var(--muted);
+
+  --photo-cols: 7;
+  --photo-gap: 4px;
+  --photo-radius: 0px;
+  --album-gap: 10px;
+  --album-radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1f20;
+    --fg: #eee;
+    --muted: #999;
+    --card: #1c1c1e;
+    --line: #333;
+    --accent: #a5b4fc;
+    --accent-hover: #c7d2fe;
+    --on-accent: #111;
+
+    --sg-primary: var(--accent);
+    --sg-on-primary: var(--on-accent);
+    --sg-container: var(--card);
+    --sg-container-high: color-mix(in srgb, var(--card) 85%, white 15%);
+    --sg-outline: #777;
+    --signal: #4c8dff;
+  }
+}
+
+/* =========================================================
+   Reinicio global
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--fg);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+}
+
+button {
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    opacity 150ms ease,
+    background-color 150ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+img {
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   Utilidades globales
+   ========================================================= */
+
+.spacer {
+  flex: 1;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.center {
+  display: flex;
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+}

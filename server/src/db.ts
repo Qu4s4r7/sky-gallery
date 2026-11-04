@@ -99,6 +99,10 @@ CREATE TABLE IF NOT EXISTS albums (
   updated_at BIGINT NOT NULL,
   UNIQUE (user_id, name)
 );
+ALTER TABLE albums
+  ADD COLUMN IF NOT EXISTS cover_photo_id BIGINT
+REFERENCES photos(id)
+ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS album_photos (
   album_id BIGINT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,

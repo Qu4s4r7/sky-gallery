@@ -39,6 +39,8 @@ export type Album = {
   created_at: number
   updated_at: number
   photo_count?: number
+  cover_photo_id: number | null
+  cover_id?: number | null   // portada efectiva que devuelve el listado (elegida o la primera foto)
 }
 
 export type AlbumPhotos = {
@@ -47,7 +49,7 @@ export type AlbumPhotos = {
 }
 
 export type TimelineRow = {
-  ym: string;
+  ym: string
   n: number
 }
 
@@ -142,6 +144,16 @@ export const api = {
   }) =>
     request('/api/admin/users', withJson('POST', u)),
 
+  // Cambiar contraseña y/o cuota (solo administrador)
+  updateUser: (
+    id: number,
+    body: { password?: string; quota_gb?: number },
+  ) =>
+    request<{ ok: boolean }>(
+      `/api/admin/users/${id}`,
+      withJson('PATCH', body),
+    ),
+
   deleteUser: (id: number, photos?: 'transfer' | 'detach') =>
     request<{
       ok: boolean
@@ -168,6 +180,7 @@ export const api = {
     data: {
       name?: string
       description?: string
+      cover_photo_id?: number | null
     },
   ) =>
     request<Album>(

@@ -1,0 +1,54 @@
+/* =========================================================
+   Papelera
+   ========================================================= */
+
+.sg-trash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+}
+
+.sg-trash-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sg-trash-info span {
+  color: var(--sg-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.sg-empty-trash-button {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #b3261e;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sg-empty-trash-button:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.sg-empty-trash-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sg-trash-notice {
+  margin: 0 24px 12px;
+  color: var(--sg-on-surface-variant);
+  font-size: 0.9rem;
+}
+
+.library-message {
+  padding: 24px;
+}

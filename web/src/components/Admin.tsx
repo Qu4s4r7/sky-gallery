@@ -2,6 +2,10 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { api, fmtBytes, type Me, type UserRow } from '../api'
 
 const EMPTY = { username: '', password: '', role: 'user', quota_gb: '' }
+const GB = 1024 ** 3
+
+// Cuota en GB con un decimal, como texto para el input
+const quotaToGb = (bytes: number) => String(Math.round((bytes / GB) * 10) / 10)
 
 export default function Admin({ me }: { me: Me }) {
   const [users, setUsers] = useState<UserRow[]>([])
@@ -9,21 +13,32 @@ export default function Admin({ me }: { me: Me }) {
   const [msg, setMsg] = useState('')
   const [notice, setNotice] = useState('')
 
+  // Eliminar
   const [toDelete, setToDelete] = useState<UserRow | null>(null)
   const [mode, setMode] = useState<'transfer' | 'detach'>('transfer')
   const [delError, setDelError] = useState('')
   const [busy, setBusy] = useState(false)
 
+  // Editar contraseña / cuota
+  const [toEdit, setToEdit] = useState<UserRow | null>(null)
+  const [editPassword, setEditPassword] = useState('')
+  const [editQuota, setEditQuota] = useState('')
+  const [editError, setEditError] = useState('')
+
   const load = () => api.users().then(setUsers).catch((e) => setMsg(e.message))
   useEffect(() => { load() }, [])
 
-  // Esc cierra el diálogo
+  // Esc cierra el diálogo que esté abierto
   useEffect(() => {
-    if (!toDelete) return
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busy) setToDelete(null) }
+    if (!toDelete && !toEdit) return
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || busy) return
+      setToDelete(null)
+      setToEdit(null)
+    }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
-  }, [toDelete, busy])
+  }, [toDelete, toEdit, busy])
 
   const set = (k: keyof typeof EMPTY) =>
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm({ ...form, [k]: e.target.value })
@@ -40,7 +55,11 @@ export default function Admin({ me }: { me: Me }) {
     }
   }
 
+  // Los administradores no se pueden eliminar
+  const isProtected = (u: UserRow) => u.role === 'admin'
+
   function askDelete(u: UserRow) {
+    if (isProtected(u)) return
     setToDelete(u)
     setMode('transfer')     // la opción que no pierde nada es la que viene marcada
     setDelError('')
@@ -48,7 +67,7 @@ export default function Admin({ me }: { me: Me }) {
   }
 
   async function confirmDelete() {
-    if (!toDelete) return
+    if (!toDelete || isProtected(toDelete)) return
     setBusy(true)
     setDelError('')
     try {
@@ -62,6 +81,67 @@ export default function Admin({ me }: { me: Me }) {
       load()
     } catch (err) {
       setDelError((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function askEdit(u: UserRow) {
+    setToEdit(u)
+    setEditPassword('')
+    setEditQuota(quotaToGb(u.quota_bytes))
+    setEditError('')
+    setNotice('')
+  }
+
+  async function confirmEdit(e: FormEvent) {
+    e.preventDefault()
+    if (!toEdit) return
+
+    const body: { password?: string; quota_gb?: number } = {}
+
+    if (editPassword) {
+      if (editPassword.length < 8) {
+        setEditError('La contraseña debe tener al menos 8 caracteres.')
+        return
+      }
+      body.password = editPassword
+    }
+
+    if (editQuota !== quotaToGb(toEdit.quota_bytes)) {
+      const gb = Number(editQuota)
+      if (!Number.isFinite(gb) || gb <= 0) {
+        setEditError('La cuota debe ser un número mayor que 0.')
+        return
+      }
+      if (gb * GB < toEdit.used_bytes) {
+        setEditError(
+          `La cuota no puede ser menor que el espacio que ya usa (${fmtBytes(toEdit.used_bytes)}).`,
+        )
+        return
+      }
+      body.quota_gb = gb
+    }
+
+    if (Object.keys(body).length === 0) {
+      setToEdit(null)
+      return
+    }
+
+    setBusy(true)
+    setEditError('')
+    try {
+      await api.updateUser(toEdit.id, body)
+
+      const parts = [`Usuario «${toEdit.username}» actualizado.`]
+      if (body.password) parts.push('Contraseña cambiada.')
+      if (body.quota_gb) parts.push(`Cuota: ${body.quota_gb} GB.`)
+      setNotice(parts.join(' '))
+
+      setToEdit(null)
+      load()
+    } catch (err) {
+      setEditError((err as Error).message)
     } finally {
       setBusy(false)
     }
@@ -85,9 +165,10 @@ export default function Admin({ me }: { me: Me }) {
                 <td>{u.photo_count}</td>
                 <td>{fmtBytes(u.used_bytes)} / {fmtBytes(u.quota_bytes)}</td>
                 <td className="actions">
+                  <button onClick={() => askEdit(u)}>Editar</button>{' '}
                   <button
-                    disabled={u.id === me.id}
-                    title={u.id === me.id ? 'No puedes eliminar tu propia cuenta' : undefined}
+                    disabled={isProtected(u)}
+                    title={isProtected(u) ? 'Los administradores no se pueden eliminar' : undefined}
                     onClick={() => askDelete(u)}
                   >
                     Eliminar
@@ -111,6 +192,56 @@ export default function Admin({ me }: { me: Me }) {
           <button>Crear usuario</button>
         </form>
       </div>
+
+      {toEdit && (
+        <div className="overlay" onClick={() => !busy && setToEdit(null)}>
+          <form
+            className="card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-title"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={confirmEdit}
+          >
+            <h3 id="edit-title">Editar a «{toEdit.username}»</h3>
+
+            <label>
+              <span className="muted">Nueva contraseña (déjala vacía para no cambiarla)</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder="mín. 8 caracteres"
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+              />
+            </label>
+
+            <label>
+              <span className="muted">
+                Cuota de almacenamiento en GB (usa {fmtBytes(toEdit.used_bytes)})
+              </span>
+              <input
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={editQuota}
+                onChange={(e) => setEditQuota(e.target.value)}
+              />
+            </label>
+
+            {editPassword && toEdit.id !== me.id && (
+              <p className="muted">Su sesión se cerrará de inmediato al cambiar la contraseña.</p>
+            )}
+
+            {editError && <p className="error">{editError}</p>}
+
+            <div className="dialog-actions">
+              <button type="button" disabled={busy} onClick={() => setToEdit(null)}>Cancelar</button>
+              <button disabled={busy}>{busy ? 'Guardando…' : 'Guardar cambios'}</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {toDelete && (
         <div className="overlay" onClick={() => !busy && setToDelete(null)}>

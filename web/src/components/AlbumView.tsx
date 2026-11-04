@@ -1,3 +1,4 @@
+
 import {
   useCallback,
   useEffect,
@@ -29,6 +30,8 @@ export default function AlbumView() {
 
   const [editing, setEditing] = useState(false)
   const [picking, setPicking] = useState(false)
+  const [coverPicking, setCoverPicking] = useState(false)
+
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState('')
@@ -44,6 +47,10 @@ export default function AlbumView() {
   const index = viewer.id
     ? photos.findIndex((photo) => photo.id === viewer.id)
     : -1
+
+  const coverPhotos = photos.filter(
+    (photo) => photo.media_type !== 'video',
+  )
 
   const load = useCallback(async () => {
     const result = await api.albumPhotos(albumId)
@@ -71,6 +78,7 @@ export default function AlbumView() {
         state: null,
       })
     }
+
     // Solo se procesa el aviso inicial.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -89,6 +97,31 @@ export default function AlbumView() {
       setAlbum(updated)
       setEditing(false)
       setNotice('Álbum actualizado.')
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Cambiar o quitar la fotografía de portada.
+  async function setAlbumCover(photoId: number | null) {
+    setError('')
+    setBusy(true)
+
+    try {
+      const updated = await api.updateAlbum(albumId, {
+        cover_photo_id: photoId,
+      })
+
+      setAlbum(updated)
+      setCoverPicking(false)
+
+      setNotice(
+        photoId === null
+          ? 'Portada eliminada.'
+          : 'Portada del álbum actualizada.',
+      )
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -178,7 +211,6 @@ export default function AlbumView() {
 
         addedCount = result.added
 
-        // Actualizar la galería con el contenido real del álbum.
         await load()
       }
 
@@ -284,6 +316,16 @@ export default function AlbumView() {
         : undefined
 
     setPhotos((items) => items.filter((photo) => photo.id !== id))
+
+    // Si era la portada, actualizar también el estado local.
+    if (album?.cover_photo_id === id) {
+      setAlbum((current) =>
+        current
+          ? { ...current, cover_photo_id: null }
+          : current,
+      )
+    }
+
     setNotice('Fotografía retirada del álbum; el original sigue guardado.')
 
     if (viewer.id === id) {
@@ -342,7 +384,7 @@ export default function AlbumView() {
           disabled={busy}
           onClick={openUploadPicker}
         >
-          {uploading ? 'Subiendo…' : 'Subir fotos'}
+          {uploading ? 'Subiendo…' : 'Subir'}
         </button>
 
         <button
@@ -365,14 +407,6 @@ export default function AlbumView() {
         >
           Editar
         </button>
-
-        <button
-          type="button"
-          disabled={busy}
-          onClick={deleteAlbum}
-        >
-          Eliminar álbum
-        </button>
       </div>
 
       {uploadStatus && (
@@ -382,15 +416,38 @@ export default function AlbumView() {
       )}
 
       {error && (
-        <p className="error" role="alert" style={{ whiteSpace: 'pre-line' }}>
+        <p
+          className="error"
+          role="alert"
+          style={{ whiteSpace: 'pre-line' }}
+        >
           {error}
         </p>
       )}
 
-      {notice && <p className="muted" role="status">{notice}</p>}
+      {notice && (
+        <p className="muted" role="status">
+          {notice}
+        </p>
+      )}
 
+      {/* Formulario de edición. */}
       {editing && (
         <form className="card album-form" onSubmit={saveAlbum}>
+          <div className="album-cover-preview">
+            {album.cover_photo_id ? (
+              <img
+                src={api.thumb(album.cover_photo_id)}
+                alt="Portada actual del álbum"
+              />
+            ) : (
+              <div className="album-cover-empty">
+                Sin portada
+              </div>
+            )}
+
+          </div>
+          
           <h3>Editar álbum</h3>
 
           <input
@@ -409,12 +466,38 @@ export default function AlbumView() {
             rows={3}
           />
 
-          <button disabled={busy || !name.trim()}>
-            {busy ? 'Guardando…' : 'Guardar cambios'}
-          </button>
+          <div className="album-picker-actions">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setEditing(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={() => setCoverPicking(true)}
+            >
+              Seleccionar portada
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={deleteAlbum}
+            >
+              Eliminar álbum
+            </button>
+            <button disabled={busy || !name.trim()}>
+              {busy ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+            
+          </div>
         </form>
       )}
 
+      {/* Galería del álbum. */}
       {!editing &&
         (photos.length === 0 ? (
           <div className="center muted">
@@ -474,6 +557,7 @@ export default function AlbumView() {
           </div>
         ))}
 
+      {/* Visor de fotografías. */}
       {viewer.id && index >= 0 && (
         <Viewer
           id={viewer.id}
@@ -496,6 +580,7 @@ export default function AlbumView() {
         />
       )}
 
+      {/* Ventana para añadir fotografías existentes. */}
       {picking && (
         <div className="overlay" onClick={() => setPicking(false)}>
           <div
@@ -522,10 +607,13 @@ export default function AlbumView() {
                   )
 
                   return (
-                    <label
+                    <button
+                      type='button'
                       className={`album-picker-item${checked ? ' selected' : ''}`}
                       key={photo.id}
                       style={{ position: 'relative' }}
+                      disabled={alreadyInAlbum}
+                      onClick={() => togglePhoto(photo.id)}
                     >
                       <img
                         src={api.thumb(photo.id)}
@@ -537,31 +625,19 @@ export default function AlbumView() {
                         <span
                           className="tile-video-play"
                           aria-hidden="true"
-                          style={{
-                            position: 'absolute',
-                            left: '50%',
-                            top: '28%',
-                            transform: 'translate(-50%, -50%)',
-                            pointerEvents: 'none',
-                          }}
                         >
                           ▶
                         </span>
                       )}
-
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={alreadyInAlbum}
-                        onChange={() => togglePhoto(photo.id)}
-                      />
-
-                      <span title={photo.original_name}>
-                        {alreadyInAlbum
-                          ? 'Ya está en el álbum'
-                          : photo.original_name}
-                      </span>
-                    </label>
+                      {checked === true && (
+                        <div className='checked'>
+                          <span className="material-symbols-outlined">
+                            check
+                            </span>
+                        </div>
+                      )}
+                      
+                    </button>
                   )
                 })}
               </div>
@@ -585,6 +661,85 @@ export default function AlbumView() {
                   ? 'Añadiendo…'
                   : `Añadir ${selectedIds.length} fotos`}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ventana para seleccionar la portada. */}
+      {coverPicking && (
+        <div
+          className="overlay"
+          onClick={() => {
+            if (!busy) setCoverPicking(false)
+          }}
+        >
+          <div
+            className="card wide album-picker"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2>Seleccionar portada</h2>
+
+            <p className="muted">
+              Elige una fotografía del álbum para utilizarla como portada.
+            </p>
+
+            {coverPhotos.length === 0 ? (
+              <p className="muted">
+                No hay fotografías disponibles para utilizar como portada.
+              </p>
+            ) : (
+              <div className="album-picker-grid">
+                {coverPhotos.map((photo) => {
+                  const selected =
+                    album.cover_photo_id === photo.id
+
+                  return (
+                    <button
+                      type="button"
+                      key={photo.id}
+                      className={`album-picker-item album-cover-picker-item${selected ? ' selected' : ''}`}
+                      disabled={busy}
+                      onClick={() => setAlbumCover(photo.id)}
+                      title={`Usar ${photo.original_name} como portada`}
+                      aria-label={`Usar ${photo.original_name} como portada`}
+                      aria-pressed={selected}
+                    >
+                      <img
+                        src={api.thumb(photo.id)}
+                        alt={photo.original_name}
+                        loading="lazy"
+                      />
+
+                      {selected && (
+                        <span className="album-cover-selected">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="album-picker-actions">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setCoverPicking(false)}
+              >
+                Cancelar
+              </button>
+
+              {album.cover_photo_id != null && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setAlbumCover(null)}
+                >
+                  Quitar portada
+                </button>
+              )}
             </div>
           </div>
         </div>
