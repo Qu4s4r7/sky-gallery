@@ -29,7 +29,7 @@
 
   --photo-cols: 7;
   --photo-gap: 4px;
-  --photo-radius: 0px;
+  --photo-radius: 10px;
   --album-gap: 10px;
   --album-radius: 10px;
 }
@@ -83,7 +83,6 @@ textarea {
   color: var(--fg);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 8px;
   padding: 0.45rem 0.8rem;
 }
 
@@ -117,6 +116,9 @@ button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+input:focus {
+  outline: none;
 }
 
 textarea {

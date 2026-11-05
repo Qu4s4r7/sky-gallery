@@ -1,3 +1,4 @@
+
 /* =========================================================
    Pantallas pequeñas
    ========================================================= */
@@ -7,15 +8,40 @@
     --photo-cols: 3;
   }
 
+  /* Páginas generales */
+
   .page {
     padding: 12px;
+    min-width: 0;
   }
 
+  .content {
+    padding: 12px;
+    margin: 6px;
+    border-radius: 10px;
+  }
+
+  /* Buscador */
+
+  .topbar-left {
+    max-width: none;
+    gap: 7px;
+    padding: 5px 9px;
+  }
+
+  .topbar-left input {
+    font-size: 0.85rem;
+  }
+
+  /* Álbumes */
+
   .albums {
+    min-width: 0;
     padding: 12px;
   }
 
   .album-toolbar {
+    flex-wrap: wrap;
     gap: 8px;
   }
 
@@ -25,6 +51,7 @@
   }
 
   .album-card {
+    min-width: 0;
     min-height: 130px;
     padding: 12px;
   }
@@ -40,71 +67,40 @@
   }
 
   .album-picker-item {
+    min-width: 0;
     padding: 4px;
   }
-}
 
-/* =========================================================
-   Navegación inferior en móviles
-   ========================================================= */
+  /* Tarjetas y formularios */
 
-@media (max-width: 800px) {
-  .app {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 56px minmax(0, 1fr) 64px;
-    grid-template-areas:
-      "top"
-      "main"
-      "side";
+  .card {
+    width: min(100%, 360px);
+    padding: 1rem;
   }
 
-  .topbar {
-    gap: 0.5rem;
-    padding: 0 0.75rem;
+  .card.wide {
+    width: 100%;
+    max-width: 100%;
+    max-height: 85dvh;
   }
 
-  .brand {
-    width: auto;
-    font-size: 1rem;
+  /* Tablas */
+
+  table {
+    min-width: 550px;
   }
 
-  .upload-slot .muted {
-    display: none;
-  }
-
-  .sidebar {
-    flex-direction: row;
-    gap: 0;
-    padding: 0;
-    overflow: visible;
-    border-top: 1px solid var(--line);
-    background: var(--bg);
-  }
-
-  .nav-item {
-    flex: 1;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.15rem;
-    padding: 0.4rem 0;
-    border-radius: 0;
-    font-size: 0.7rem;
-  }
-
-  .nav-item.active {
-    background: transparent;
-  }
-
-  .storage {
-    display: none;
-  }
+  /* Subida de archivos */
 
   .sg-upload {
     justify-content: flex-end;
+    flex-wrap: wrap;
+    min-width: 0;
   }
 
   .sg-upload-actions {
     gap: 5px;
+    flex-wrap: wrap;
   }
 
   .sg-upload-actions .sg-upload-button,
@@ -119,16 +115,17 @@
     width: 100%;
     text-align: right;
   }
-}
 
-/* =========================================================
-   Papelera en móviles
-   ========================================================= */
+  .sg-upload-spinner {
+    flex-shrink: 0;
+  }
 
-@media (max-width: 600px) {
+  /* Papelera */
+
   .sg-trash-toolbar {
     align-items: flex-start;
     flex-direction: column;
+    gap: 10px;
     padding: 12px 16px;
   }
 
@@ -142,21 +139,319 @@
 }
 
 /* =========================================================
-   Teléfonos pequeños
+   Navegación inferior en móviles
    ========================================================= */
 
-@media (max-width: 390px) {
-  .sg-upload-actions .sg-upload-button,
-  .sg-upload-actions .sg-folder-upload-button {
-    padding-inline: 8px;
-    font-size: 0.73rem;
+@media (max-width: 800px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 56px minmax(0, 1fr) 64px;
+
+    grid-template-areas:
+      "top"
+      "main"
+      "side";
+
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Barra superior */
+
+  .topbar {
+    gap: 0.6rem;
+    justify-content: space-between;
+    min-width: 0;
+    padding: 0 0.75rem;
+  }
+
+  .topbar-left {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .topbar-right {
+    flex-shrink: 0;
+    gap: 0.45rem;
+  }
+
+  .topbar-right .upload-slot {
+    min-width: 0;
+  }
+
+  .upload-slot .muted {
+    display: none;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* Contenido */
+
+  .content {
+    min-width: 0;
+    min-height: 0;
+    margin: 6px;
+    padding: 12px;
+    overflow: auto;
+  }
+
+  /* Barra de navegación inferior */
+
+  .sidebar {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+
+    min-width: 0;
+    min-height: 0;
+
+    padding: 0;
+    overflow: hidden;
+
+    border-top: 1px solid var(--line);
+    border-right: none;
+
+    background: #171821;
+  }
+
+  .sidebar > .brand {
+    display: none;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    gap: 0;
+  }
+
+  .nav-item {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 0;
+    gap: 0.2rem;
+
+    padding: 0.35rem 0.1rem;
+
+    border-radius: 0;
+    font-size: 0.68rem;
+    text-align: center;
+  }
+
+  .nav-item svg {
+    width: 21px;
+    height: 21px;
+    flex-shrink: 0;
+  }
+
+  .nav-item span {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-item.active {
+    background: transparent;
+    color: var(--accent);
+  }
+
+  .nav-item:hover {
+    background: color-mix(in srgb, var(--fg) 5%, transparent);
+  }
+
+  .storage {
+    display: none;
+  }
+
+  /* Uploader */
+
+  .sg-upload {
+    justify-content: flex-end;
+  }
+
+  .sg-upload-actions {
+    gap: 5px;
   }
 }
 
-@media (max-width: 380px) {
+/* =========================================================
+   Teléfonos pequeños
+   ========================================================= */
+
+@media (max-width: 520px) {
   :root {
     --photo-cols: 2;
   }
+
+  /* Barra superior */
+
+  .topbar {
+    gap: 0.4rem;
+    padding: 0 0.5rem;
+  }
+
+  .topbar-left {
+    gap: 5px;
+    padding: 5px 8px;
+  }
+
+  .topbar-left input {
+    font-size: 0.78rem;
+  }
+
+  .topbar-right {
+    gap: 0.25rem;
+  }
+
+  .avatar,
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Navegación */
+
+  .nav-item {
+    font-size: 0.63rem;
+  }
+
+  .nav-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Álbumes */
+
+  .album-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .album-card {
+    min-height: 115px;
+    padding: 9px;
+  }
+
+  .album-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .album-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Uploader */
+
+  .sg-upload-actions .sg-upload-button,
+  .sg-upload-actions .sg-folder-upload-button {
+    min-height: 38px;
+    padding: 0 9px;
+    font-size: 0.73rem;
+  }
+
+  /* Formularios */
+
+  .card {
+    padding: 1rem;
+  }
+
+  .dialog-actions {
+    flex-wrap: wrap;
+  }
+
+  .dialog-actions button {
+    flex: 1;
+  }
+
+  /* Contenido */
+
+  .content {
+    padding: 10px;
+  }
+}
+
+/* =========================================================
+   Teléfonos muy pequeños
+   ========================================================= */
+
+@media (max-width: 390px) {
+  .app {
+    grid-template-rows: 54px minmax(0, 1fr) 60px;
+  }
+
+  /* Barra superior */
+
+  .topbar {
+    gap: 0.3rem;
+    padding-inline: 0.4rem;
+  }
+
+  .topbar-left {
+    gap: 4px;
+    padding-inline: 7px;
+  }
+
+  .topbar-left input {
+    font-size: 0.72rem;
+  }
+
+  .topbar-right {
+    gap: 0.15rem;
+  }
+
+  .avatar,
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Contenido */
+
+  .content {
+    margin: 4px;
+    padding: 8px;
+  }
+
+  /* Navegación */
+
+  .nav-item {
+    gap: 0.15rem;
+    font-size: 0.59rem;
+  }
+
+  .nav-item svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  /* Uploader */
+
+  .sg-upload-actions .sg-upload-button,
+  .sg-upload-actions .sg-folder-upload-button {
+    padding-inline: 8px;
+    font-size: 0.7rem;
+  }
+
+  /* Álbumes */
 
   .album-list {
     grid-template-columns: 1fr;
@@ -164,10 +459,6 @@
 
   .album-picker-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .brand {
-    font-size: 0.92rem;
   }
 }
 

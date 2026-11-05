@@ -140,7 +140,8 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
           onClick={() => filesInput.current?.click()}
           disabled={busy}
         >
-          {busy ? `Subiendo ${progress}%` : 'Subir'}
+          {busy ? <span className="material-symbols-rounded">cloud_sync</span> + ` ${progress}%` : 
+          <span className="material-symbols-rounded">cloud_upload</span>}
         </button>
 
         <button
@@ -150,8 +151,7 @@ export default function Uploader({ onDone }: { onDone: () => void }) {
           disabled={busy}
           title="Seleccionar una carpeta de fotos y vídeos"
         >
-          <span aria-hidden="true">▰</span>
-          <span>Subir carpeta</span>
+          <span className="material-symbols-rounded">drive_folder_upload</span>
         </button>
       </div>
 

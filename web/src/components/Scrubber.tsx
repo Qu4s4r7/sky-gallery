@@ -171,15 +171,14 @@ export default function Scrubber({
 
   const pointing = drag !== null || hover !== null
   const fraction = drag ?? hover ?? firstIndex / denominator
-  const markerY = clamp(fraction * height, 0, height)
   const selectedIndex = pointing ? indexOf(fraction) : firstIndex
   const selectedBucket = bucketAt(selectedIndex)
   const date = selectedBucket ? parseYM(selectedBucket.ym) : null
 
   const readoutY = clamp(
-    markerY,
-    Math.min(26, height / 2),
-    Math.max(height - 26, height / 2),
+    clamp(fraction * height, 0, height),
+    Math.min(14, height / 2),
+    Math.max(height - 14, height / 2),
   )
 
   const active = pointing || scrolling || loading
@@ -248,11 +247,6 @@ export default function Scrubber({
           </span>
         ))}
       </div>
-
-      <div
-        className="marker"
-        style={{ top: markerY }}
-      />
 
       <div
         className="readout"
