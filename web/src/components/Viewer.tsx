@@ -104,20 +104,20 @@ export default function Viewer({
       
       <div className='viewer-bar'>
         <button className='close' type="button" onClick={onClose}>
-          <span className="material-symbols-outlined">
+          <span className="material-symbols-rounded">
           arrow_back
           </span>
         </button>
         <div>
           <span>{photo?.original_name ?? ''}</span>
           <button type="button" onClick={() => void share()} disabled={!photo} aria-label="Compartir">
-            <span className="material-symbols-outlined"> 
+            <span className="material-symbols-rounded"> 
               share
             </span>
           </button>
           {action && (
             <button type="button" onClick={() => void runAction()}>
-              <span className="material-symbols-outlined">
+              <span className="material-symbols-rounded">
                 delete
               </span>
             </button>
