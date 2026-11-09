@@ -16,7 +16,7 @@
   min-height: 0;
   overflow: hidden;
 
-  background: #0e0f15;
+  background: transparent;
 }
 
 /* =========================================================
@@ -33,9 +33,7 @@
 
   min-width: 0;
   padding: 10px;
-
-  border-bottom: 1px solid var(--line);
-  background: #111219;
+  background: transparent;
 }
 
 /* Buscador */
@@ -127,7 +125,8 @@
 
   overflow-y: auto;
 
-  background: #171821;
+  background: transparent;
+  backdrop-filter: blur(10px);
   border-right: 1px solid var(--line);
 }
 
@@ -289,7 +288,7 @@
   margin: 10px;
   overflow: auto;
 
-  background: #111219;
+  background: transparent;
 }
 
 /* =========================================================

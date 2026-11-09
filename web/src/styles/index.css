@@ -6,25 +6,25 @@
   color-scheme: light dark;
   font-family: system-ui, sans-serif;
 
-  --bg: #fff;
-  --fg: #1a1a1a;
-  --muted: #777;
-  --card: #f4f4f5;
-  --line: #ddd;
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --on-accent: #fff;
+  --bg: #FFF8F5; /* backgroundLight */
+  --fg: #4D2A02; /* onBackgroundLight */
+  --muted: #81562B; /* onSurfaceVariantLight */
+  --card: #FFEADA; /* surfaceContainerLight */
+  --line: #DEA775; /* outlineVariantLight */
+  --accent: #964A05; /* primaryLight */
+  --accent-hover: #FFAF79; /* primaryContainerLight */
+  --on-accent: #FFF7F4; /* onPrimaryLight */
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  --signal: #2563eb;
+  --signal: #00649B; /* tertiaryLight */
   --ruler: color-mix(in srgb, var(--fg) 35%, transparent);
-  --danger: #dc2626;
+  --danger: #AA371C; /* errorLight */
   --radius: 10px;
 
   --sg-primary: var(--accent);
   --sg-on-primary: var(--on-accent);
   --sg-container: var(--card);
   --sg-container-high: color-mix(in srgb, var(--card) 88%, var(--fg) 12%);
-  --sg-outline: var(--muted);
+  --sg-outline: #A07143; /* outlineLight */
   --sg-on-surface-variant: var(--muted);
 
   --photo-cols: 7;
@@ -36,24 +36,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1e1f20;
-    --fg: #eee;
-    --muted: #999;
-    --card: #1c1c1e;
-    --line: #333;
-    --accent: #a5b4fc;
-    --accent-hover: #c7d2fe;
-    --on-accent: #111;
+    --bg: #190B01; /* backgroundDark */
+    --fg: #FFE0C6; /* onBackgroundDark */
+    --muted: #CEA37D; /* onSurfaceVariantDark */
+    --card: #281503; /* surfaceContainerDark */
+    --line: #614122; /* outlineVariantDark */
+    --accent: #F4A774; /* primaryDark */
+    --accent-hover: #6E390E; /* primaryContainerDark */
+    --on-accent: #5A2900; /* onPrimaryDark */
 
     --sg-primary: var(--accent);
     --sg-on-primary: var(--on-accent);
     --sg-container: var(--card);
     --sg-container-high: color-mix(in srgb, var(--card) 85%, white 15%);
-    --sg-outline: #777;
-    --signal: #4c8dff;
+    --sg-outline: #936E4B; /* outlineDark */
+    --signal: #95CCFF; /* tertiaryDark */
   }
 }
-
 /* =========================================================
    Reinicio global
    ========================================================= */
@@ -71,7 +70,10 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: var(--bg);
+  /*background: var(--bg);*/
+  background: url("../assets/background.png");
+  background-size: cover;
+  background-position: center;
   color: var(--fg);
 }
 
@@ -136,6 +138,10 @@ p {
   overflow-wrap: anywhere;
 }
 
+.material-symbols-rounded.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 /* =========================================================
    Utilidades globales
    ========================================================= */
@@ -153,11 +159,68 @@ p {
   color: var(--danger);
 }
 
-.center {
+.login {
   display: flex;
-  min-height: 60vh;
+  min-height: 100vh;
   align-items: center;
   justify-content: center;
   padding: 1rem;
   text-align: center;
+}
+.login h1 {
+  position: absolute;
+  top: 80px;
+  font-family: "Rubik Mono One", monospace;
+  font-size: 40px;
+}
+.login .card {
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, .2);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 10px rgba(0, 0, 0, .2);
+  color: white;
+  padding: 30px;
+  border-radius: 24px;
+}
+.login .card div {
+  position: relative;
+  width: 100%;
+  height: 50px;
+}
+.login .card input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  outline: none;
+  border: 2px solid rgba(255, 255, 255, .2);
+  border-radius: 40px;
+  font-size: 16px;
+  color: white;
+  padding: 20px 45px 20px 20px;
+}
+.login .card input::placeholder {
+  color: white;
+}
+.login .card div span {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+}
+.login .card button {
+  width: 100%;
+  height: 45px;
+  background: white;
+  border: none;
+  outline: none;
+  border-radius: 40px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+  cursor: pointer;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+.login .card button:hover {
+  color: black;
 }

@@ -22,15 +22,27 @@ export default function Login({ onLogin }: { onLogin: (me: Me) => void }) {
   }
 
   return (
-    <div className="center">
+    <div className="login">
+      <h1>Revelation Gallery</h1>
       <form className="card" onSubmit={submit}>
-        <h1>Galería</h1>
-        <input placeholder="Usuario" value={username} autoFocus autoComplete="username"
+        <div>
+          <input placeholder="Username" value={username} autoFocus autoComplete="username"
           onChange={(e) => setUsername(e.target.value)} />
-        <input type="password" placeholder="Contraseña" value={password} autoComplete="current-password"
+          <span className="material-symbols-rounded filled">
+          person
+          </span>
+        </div>
+        <div>
+          <input type="password" placeholder="Password" value={password} autoComplete="current-password"
           onChange={(e) => setPassword(e.target.value)} />
+          <span className="material-symbols-rounded filled">
+          lock
+          </span>
+        </div>
+        
+        
         {error && <p className="error">{error}</p>}
-        <button disabled={busy || !username || !password}>{busy ? 'Entrando…' : 'Entrar'}</button>
+        <button disabled={busy || !username || !password}>{busy ? 'Loginnig…' : 'Login'}</button>
       </form>
     </div>
   )

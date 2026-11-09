@@ -63,7 +63,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  min-height: 120px;
+  height: 140px;
   border: 1px solid var(--line);
   border-radius: var(--album-radius);
   background: var(--card);
